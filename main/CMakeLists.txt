@@ -1,0 +1,17 @@
+idf_component_register(SRCS
+        "main.cpp"
+        "assets/fonts/Bebas120.c"
+        "assets/images/upload_piam_home_png.c"
+        "behavior/animations.c"
+        "behavior/events.c"
+        "core/gui_core.c"
+        "core/variables.c"
+        "helpers/ui_helpers.c"
+        "screens/CALCULATOR.c"
+        "screens/HOME.c"
+        "screens/HOUR.c"
+        "screens/MENU.c"
+        "screens/PIAMSYS.c"
+        "screens/SETTINGS.c"
+        "screens/SOS.c"
+    INCLUDE_DIRS ".")

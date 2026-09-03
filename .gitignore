@@ -1,0 +1,9 @@
+build/
+managed_components/
+.vscode/
+.o
+.elf
+*.o
+*.elf
+*.bin
+dependencies.lock
