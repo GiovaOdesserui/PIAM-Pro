@@ -100,7 +100,7 @@ void esp_es8311_port_init(i2c_master_bus_handle_t bus_handle)
     esp_codec_set_disable_when_closed(input_dev, false);
 
     esp_codec_dev_sample_info_t fs = {};
-    fs.sample_rate = 48000;
+    fs.sample_rate = 16000;  // PIAM Pro: coincide con pcm_16000 de ElevenLabs (antes 48000)
     fs.channel = 1;
     fs.bits_per_sample = 16;
     fs.channel_mask = 0;
@@ -108,6 +108,12 @@ void esp_es8311_port_init(i2c_master_bus_handle_t bus_handle)
 
     esp_codec_dev_open(output_dev, &fs);
     esp_codec_dev_open(input_dev, &fs);
+
+    // PIAM Pro: el volumen NUNCA se establecia aca -- solo se ponia en
+    // esp_es8311_test() (que no se llama en produccion), asi que el codec
+    // quedaba en su volumen por default (silencio/muy bajo). Se agrega
+    // explicitamente aca para que la reproduccion real de TTS se escuche.
+    esp_codec_dev_set_out_vol(output_dev, 90.0);
 }
 
 

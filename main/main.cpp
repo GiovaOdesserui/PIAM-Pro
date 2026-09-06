@@ -17,7 +17,7 @@
 
 #include "esp_lvgl_port.h"
 
-#include "GUI.h"  // PIAM Pro: interfaz generada por SquareLine Vision
+#include "ui.h"  // PIAM Pro: nueva exportacion de SquareLine Studio (antes GUI.h)
 
 #include "esp_check.h"
 #include "esp_log.h"
@@ -33,6 +33,8 @@
 #include "esp_sdcard_port.h"
 #include "esp_wifi_port.h"
 #include "esp_3inch5_lcd_port.h"
+
+#include "tts_audio.h"  // PIAM Pro: WiFi propio + ElevenLabs + cache
 
 #define EXAMPLE_PIN_I2C_SDA GPIO_NUM_8
 #define EXAMPLE_PIN_I2C_SCL GPIO_NUM_7
@@ -93,11 +95,13 @@ extern "C" void app_main(void)
     esp_axp2101_port_init(i2c_bus_handle);
     vTaskDelay(pdMS_TO_TICKS(100));
     esp_es8311_port_init(i2c_bus_handle);
+    tts_audio_init();  // PIAM Pro: WiFi + cache de audio (necesita el codec ya creado)
     esp_qmi8658_port_init(i2c_bus_handle);
     esp_pcf85063_port_init(i2c_bus_handle);
     esp_sdcard_port_init();
     esp_camera_port_init(I2C_PORT_NUM);
-    esp_wifi_port_init("WSTEST", "waveshare0755");
+    // esp_wifi_port_init("WSTEST", "waveshare0755");  // PIAM Pro: sacado,
+    // choca con la inicializacion de WiFi propia de tts_audio_init() de abajo
 
     esp_3inch5_brightness_port_init();
     esp_3inch5_brightness_port_set(80);
@@ -110,12 +114,11 @@ extern "C" void app_main(void)
     if (lvgl_port_lock(0))
     {
         // PIAM Pro: cargamos la interfaz de SquareLine Vision en vez del demo.
-        // Usamos GUI_loadContent() (no GUI_init()/GUI_load()) porque el framework
-        // de LVGL (lv_init) y el HAL (pantalla+tactil) ya los arma esp_lvgl_port
-        // mas arriba, via lv_port_init(). Llamar a GUI_load() completo intentaria
-        // re-inicializar todo eso y buscar un HAL_init() que no existe en este
-        // proyecto ESP-IDF.
-        GUI_loadContent();
+        // PIAM Pro: nueva exportacion de SquareLine Studio.
+        // ui_init() hace todo en una sola llamada: tema, las 9 pantallas,
+        // y carga HOME como pantalla inicial. No hace falta separar
+        // framework/HAL/contenido como en la version anterior (gui_core.c).
+        ui_init();
         lvgl_port_unlock();
     }
 }
@@ -168,6 +171,7 @@ void lv_port_init(void)
             .buff_dma = 0,
             .buff_spiram = 0,
             .sw_rotate = 0,
+            .swap_bytes = 1,
             .full_refresh = 0,
             .direct_mode = 0,
         },
