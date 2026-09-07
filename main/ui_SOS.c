@@ -4,6 +4,12 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include "esp_pcf85063_port.h"
+#include "tts_audio.h"
+#include "nvs_flash.h"
+#include "nvs.h"
+#include <string.h>
+#include <stdio.h>
 
 lv_obj_t * ui_SOS = NULL;
 lv_obj_t * ui_Panel1 = NULL;
@@ -37,11 +43,203 @@ void ui_event_SOS(lv_event_t * e)
     }
 }
 
+// ======================= PIAM Pro: motor de alarmas =======================
+
+#define MAX_ALARMS 10
+
+typedef struct {
+    uint8_t hour;   // 0-23
+    uint8_t minute; // 0-59
+    bool enabled;
+} piam_alarm_t;
+
+static piam_alarm_t s_alarms[MAX_ALARMS];
+static int s_alarm_count = 0;
+static int s_editing_index = -1; // -1 = agregando nueva, >=0 = editando esa alarma
+
+static void alarms_load(void)
+{
+    s_alarm_count = 0;
+    nvs_handle_t nvs;
+    if (nvs_open("piam_alarms", NVS_READONLY, &nvs) == ESP_OK) {
+        size_t size = sizeof(s_alarms);
+        nvs_get_blob(nvs, "list", s_alarms, &size);
+        int32_t count = 0;
+        nvs_get_i32(nvs, "count", &count);
+        if (count >= 0 && count <= MAX_ALARMS) s_alarm_count = (int)count;
+        nvs_close(nvs);
+    }
+}
+
+static void alarms_save(void)
+{
+    nvs_handle_t nvs;
+    if (nvs_open("piam_alarms", NVS_READWRITE, &nvs) == ESP_OK) {
+        nvs_set_blob(nvs, "list", s_alarms, sizeof(s_alarms));
+        nvs_set_i32(nvs, "count", s_alarm_count);
+        nvs_commit(nvs);
+        nvs_close(nvs);
+    }
+}
+
+static void format_alarm_time(int hour24, int minute, char *out, size_t out_size)
+{
+    const char *ampm = (hour24 < 12) ? "AM" : "PM";
+    int hour12 = hour24 % 12;
+    if (hour12 == 0) hour12 = 12;
+    snprintf(out, out_size, "%02d:%02d %s", hour12, minute, ampm);
+}
+
+static void ui_event_AlarmRowClicked(lv_event_t * e);
+static void ui_event_AlarmSwitchToggled(lv_event_t * e);
+
+// Vuelve a armar la lista visual de alarmas en Panel1, a partir de
+// s_alarms. Se llama despues de cargar, agregar, editar o borrar.
+static void populate_alarm_list(void)
+{
+    lv_obj_clean(ui_Panel1);
+
+    for (int i = 0; i < s_alarm_count; i++) {
+        lv_obj_t *row = lv_obj_create(ui_Panel1);
+        lv_obj_remove_style_all(row);
+        lv_obj_set_width(row, 288);
+        lv_obj_set_height(row, 50);
+        lv_obj_set_style_radius(row, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(row, lv_color_hex(0x3C1756), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(row, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
+
+        lv_obj_t *label = lv_label_create(row);
+        char buf[16];
+        format_alarm_time(s_alarms[i].hour, s_alarms[i].minute, buf, sizeof(buf));
+        lv_label_set_text(label, buf);
+        lv_obj_set_x(label, -70);
+        lv_obj_set_align(label, LV_ALIGN_CENTER);
+        lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(label, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        lv_obj_t *sw = lv_switch_create(row);
+        lv_obj_set_width(sw, 50);
+        lv_obj_set_height(sw, 25);
+        lv_obj_set_x(sw, 80);
+        lv_obj_set_align(sw, LV_ALIGN_CENTER);
+        lv_obj_set_style_bg_color(sw, lv_color_hex(0x8A63A4), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(sw, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(sw, lv_color_hex(0xE900EC), LV_PART_INDICATOR | LV_STATE_CHECKED);
+        lv_obj_set_style_bg_opa(sw, 255, LV_PART_INDICATOR | LV_STATE_CHECKED);
+        if (s_alarms[i].enabled) lv_obj_add_state(sw, LV_STATE_CHECKED);
+        lv_obj_set_user_data(sw, (void *)(intptr_t)i);
+        lv_obj_add_event_cb(sw, ui_event_AlarmSwitchToggled, LV_EVENT_VALUE_CHANGED, NULL);
+
+        lv_obj_set_user_data(row, (void *)(intptr_t)i);
+        lv_obj_add_event_cb(row, ui_event_AlarmRowClicked, LV_EVENT_CLICKED, NULL);
+    }
+}
+
+// Prendido/apagado individual de una alarma (sin abrir el panel de edicion)
+static void ui_event_AlarmSwitchToggled(lv_event_t * e)
+{
+    lv_obj_t *sw = lv_event_get_target(e);
+    int idx = (int)(intptr_t)lv_obj_get_user_data(sw);
+    if (idx < 0 || idx >= s_alarm_count) return;
+
+    s_alarms[idx].enabled = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    alarms_save();
+}
+
+// Click en una alarma existente -> abrir AddPanel pre-cargado con su
+// horario, y mostrar el boton de borrar (Button3).
+static void ui_event_AlarmRowClicked(lv_event_t * e)
+{
+    lv_obj_t *row = lv_event_get_target(e);
+    int idx = (int)(intptr_t)lv_obj_get_user_data(row);
+    if (idx < 0 || idx >= s_alarm_count) return;
+
+    s_editing_index = idx;
+    lv_dropdown_set_selected(ui_Dropdown3, s_alarms[idx].hour);
+    lv_dropdown_set_selected(ui_Dropdown2, s_alarms[idx].minute);
+
+    lv_obj_remove_flag(ui_Button3, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(ui_AddPanel, LV_OBJ_FLAG_HIDDEN);
+}
+
+// ---------------------------------------------------------------------
+// Chequeo global: se ejecuta SIEMPRE (sin importar que pantalla este
+// abierta), comparando la hora actual del RTC contra las alarmas
+// activas. Si coincide, dispara voz + un aviso visual flotante.
+// ---------------------------------------------------------------------
+
+static int s_last_triggered_hour = -1;
+static int s_last_triggered_minute = -1;
+
+static void alarm_visual_dismiss_cb(lv_event_t * e)
+{
+    lv_obj_t *box = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_obj_del(box);
+}
+
+static void show_alarm_visual(void)
+{
+    lv_obj_t *box = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(box, 300, 120);
+    lv_obj_center(box);
+    lv_obj_set_style_bg_color(box, lv_color_hex(0xB3395A), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(box, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(box, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_flag(box, LV_OBJ_FLAG_CLICKABLE);
+
+    lv_obj_t *label = lv_label_create(box);
+    lv_label_set_text(label, "¡ALARMA!\n(tocar para cerrar)");
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_center(label);
+
+    lv_obj_add_event_cb(box, alarm_visual_dismiss_cb, LV_EVENT_CLICKED, box);
+
+    // Parpadeo simple mientras esta en pantalla
+    Blink_Animation(box, 0);
+}
+
+static void alarm_check_timer_cb(lv_timer_t *timer)
+{
+    int hour, minute;
+    piam_rtc_get_hour_minute(&hour, &minute);
+
+    if (hour == s_last_triggered_hour && minute == s_last_triggered_minute) {
+        return; // ya disparamos para este minuto exacto
+    }
+
+    for (int i = 0; i < s_alarm_count; i++) {
+        if (s_alarms[i].enabled && s_alarms[i].hour == hour && s_alarms[i].minute == minute) {
+            s_last_triggered_hour = hour;
+            s_last_triggered_minute = minute;
+            tts_speak("Alarma");
+            show_alarm_visual();
+            break;
+        }
+    }
+}
+
+// Llamar UNA vez desde app_main(), despues de que el RTC ya este listo.
+// Carga las alarmas guardadas y arranca el chequeo periodico global
+// (independiente de que pantalla este abierta).
+void ui_alarms_init(void)
+{
+    alarms_load();
+    lv_timer_create(alarm_check_timer_cb, 20000, NULL); // cada 20 segundos
+}
+
+// ============================================================================
+
 void ui_event_AddButton(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
+        s_editing_index = -1; // agregando nueva, no editando
+        lv_dropdown_set_selected(ui_Dropdown3, 0);
+        lv_dropdown_set_selected(ui_Dropdown2, 0);
+        lv_obj_add_flag(ui_Button3, LV_OBJ_FLAG_HIDDEN); // sin borrar en modo "agregar"
         _ui_flag_modify(ui_AddPanel, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_REMOVE);
     }
 }
@@ -60,6 +258,46 @@ void ui_event_Button3(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
+        if (s_editing_index >= 0 && s_editing_index < s_alarm_count) {
+            // Corremos las alarmas siguientes un lugar para atras
+            for (int i = s_editing_index; i < s_alarm_count - 1; i++) {
+                s_alarms[i] = s_alarms[i + 1];
+            }
+            s_alarm_count--;
+            alarms_save();
+            populate_alarm_list();
+        }
+        s_editing_index = -1;
+        _ui_flag_modify(ui_AddPanel, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
+    }
+}
+
+// PIAM Pro: "Guardar" -- agrega una alarma nueva, o actualiza la que
+// se estaba editando.
+void ui_event_Button18(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        int hour = lv_dropdown_get_selected(ui_Dropdown3);
+        int minute = lv_dropdown_get_selected(ui_Dropdown2);
+
+        if (s_editing_index >= 0 && s_editing_index < s_alarm_count) {
+            // Editando una existente
+            s_alarms[s_editing_index].hour = hour;
+            s_alarms[s_editing_index].minute = minute;
+        } else if (s_alarm_count < MAX_ALARMS) {
+            // Agregando una nueva
+            s_alarms[s_alarm_count].hour = hour;
+            s_alarms[s_alarm_count].minute = minute;
+            s_alarms[s_alarm_count].enabled = true;
+            s_alarm_count++;
+        }
+
+        alarms_save();
+        populate_alarm_list();
+
+        s_editing_index = -1;
         _ui_flag_modify(ui_AddPanel, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
     }
 }
@@ -326,7 +564,12 @@ void ui_SOS_screen_init(void)
     lv_obj_add_event_cb(ui_AddButton, ui_event_AddButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Button17, ui_event_Button17, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Button3, ui_event_Button3, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button18, ui_event_Button18, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SOS, ui_event_SOS, LV_EVENT_ALL, NULL);
+
+    // PIAM Pro: mostrar las alarmas reales guardadas (en vez del
+    // ejemplo fijo "00:00 AM" que traia Container4/Label6/Switch1)
+    populate_alarm_list();
 
 }
 

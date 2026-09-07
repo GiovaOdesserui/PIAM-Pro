@@ -39,6 +39,7 @@ extern lv_obj_t * ui_Button3;
 extern lv_obj_t * ui_Label11;
 extern lv_obj_t * ui_EditPanel;
 // CUSTOM VARIABLES
+extern void ui_alarms_init(void);
 
 #ifdef __cplusplus
 } /*extern "C"*/

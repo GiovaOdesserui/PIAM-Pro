@@ -78,6 +78,32 @@ void button_init(void);
 
 void touch_test(void);  // PIAM Pro: ya no se llama desde app_main(), queda sin usar
 
+// PIAM Pro: toque corto en PWR apaga pantalla+tactil; toque corto de
+// nuevo los reactiva. (El apagado TOTAL de la placa via mantenido 4s
+// ya lo maneja el propio chip AXP2101 en hardware, ver
+// setPowerKeyPressOffTime en esp_axp2101_port.cpp -- no hace falta
+// codigo nuestro para eso.)
+static bool s_piam_screen_on = true;
+
+static void pwr_button_check_cb(lv_timer_t *timer)
+{
+    power.getIrqStatus();
+
+    if (power.isPekeyShortPressIrq()) {
+        power.clearIrqStatus();
+
+        s_piam_screen_on = !s_piam_screen_on;
+
+        if (s_piam_screen_on) {
+            esp_3inch5_brightness_port_set(80);
+            lv_indev_enable(lvgl_touch_indev, true);
+        } else {
+            esp_3inch5_brightness_port_set(0);
+            lv_indev_enable(lvgl_touch_indev, false);
+        }
+    }
+}
+
 extern "C" void app_main(void)
 {
     // Initialize NVS
@@ -95,9 +121,13 @@ extern "C" void app_main(void)
     esp_axp2101_port_init(i2c_bus_handle);
     vTaskDelay(pdMS_TO_TICKS(100));
     esp_es8311_port_init(i2c_bus_handle);
-    tts_audio_init();  // PIAM Pro: WiFi + cache de audio (necesita el codec ya creado)
+    tts_audio_init();
     esp_qmi8658_port_init(i2c_bus_handle);
     esp_pcf85063_port_init(i2c_bus_handle);
+
+    // PIAM Pro: cargar alarmas guardadas y arrancar el chequeo
+    // periodico que las dispara (necesita el RTC ya inicializado).
+    ui_alarms_init();
 
     // ============================================================
     // PIAM Pro: AJUSTE UNICO de fecha/hora -- BORRAR ESTE BLOQUE
@@ -113,6 +143,10 @@ extern "C" void app_main(void)
     esp_3inch5_brightness_port_init();
     esp_3inch5_brightness_port_set(80);
     lv_port_init();
+
+    // PIAM Pro: chequeo del boton PWR (toque corto = apagar/prender
+    // pantalla+tactil). Necesita que lvgl_touch_indev ya exista.
+    lv_timer_create(pwr_button_check_cb, 200, NULL);
 
     button_init();
     // PIAM Pro: sacamos touch_test() -- bloqueaba app_main() hasta apretar BOOT,
