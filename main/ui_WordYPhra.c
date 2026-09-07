@@ -8,11 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// ===========================================================
-// PIAM Pro -- Logica de navegacion y voz para las 4 pantallas
-// de frases (Cotidiano, Comidas, Social, Animo).
-// ===========================================================
-
 lv_obj_t * ui_WordYPhra = NULL;
 lv_obj_t * ui_DailyCont = NULL;
 lv_obj_t * ui_DailyButton = NULL;
@@ -46,22 +41,6 @@ lv_obj_t * ui_FoodRoller = NULL;
 lv_obj_t * ui_AceptarButton1 = NULL;
 lv_obj_t * ui_Label20 = NULL;
 lv_obj_t * ui_Label25 = NULL;
-lv_obj_t * ui_CancelButton1 = NULL;
-lv_obj_t * ui_Label21 = NULL;
-lv_obj_t * ui_AceptButton1 = NULL;
-lv_obj_t * ui_Label22 = NULL;
-lv_obj_t * ui_CheeseRoller = NULL;
-lv_obj_t * ui_Label23 = NULL;
-lv_obj_t * ui_PastaRoller = NULL;
-lv_obj_t * ui_Label24 = NULL;
-lv_obj_t * ui_VeggieRoller = NULL;
-lv_obj_t * ui_Label26 = NULL;
-lv_obj_t * ui_CandyRoller = NULL;
-lv_obj_t * ui_Label27 = NULL;
-lv_obj_t * ui_DrinkRoller = NULL;
-lv_obj_t * ui_Label28 = NULL;
-lv_obj_t * ui_FishRoller = NULL;
-lv_obj_t * ui_Label29 = NULL;
 lv_obj_t * ui_SocialScreen = NULL;
 lv_obj_t * ui_SocialRoller = NULL;
 lv_obj_t * ui_AceptarButton3 = NULL;
@@ -74,10 +53,8 @@ lv_obj_t * ui_Label39 = NULL;
 lv_obj_t * ui_NumberButton = NULL;
 lv_obj_t * ui_Label40 = NULL;
 lv_obj_t * ui_WeekDayRoller = NULL;
-lv_obj_t * ui_MonthRoller = NULL;
 lv_obj_t * ui_TimeRoller = NULL;
 lv_obj_t * ui_HourRoller = NULL;
-lv_obj_t * ui_WeatherRoller = NULL;
 lv_obj_t * ui_AskRoller = NULL;
 lv_obj_t * ui_AnimoScreen = NULL;
 lv_obj_t * ui_AnimoRoller = NULL;
@@ -85,7 +62,6 @@ lv_obj_t * ui_AceptarButton2 = NULL;
 lv_obj_t * ui_Label30 = NULL;
 lv_obj_t * ui_PositionRoller = NULL;
 lv_obj_t * ui_BodyRoller = NULL;
-lv_obj_t * ui_EmotionRoller = NULL;
 lv_obj_t * ui_RutineRoller = NULL;
 lv_obj_t * ui_ColorRoller = NULL;
 lv_obj_t * ui_SportRoller = NULL;
@@ -296,99 +272,14 @@ void ui_event_MascButton_daily(lv_event_t * e)
 }
 
 // ======================= PIAM Pro: COMIDAS =======================
-
-static void hide_all_food_subrollers(void)
-{
-    lv_obj_add_flag(ui_CheeseRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_PastaRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_VeggieRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_CandyRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_DrinkRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_FishRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label23, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label24, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label26, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label27, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label28, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_Label29, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-}
-
-static void show_food_main(void)
-{
-    hide_all_food_subrollers();
-    lv_obj_remove_flag(ui_FoodRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(ui_AceptarButton1, LV_OBJ_FLAG_HIDDEN);
-}
+// (Simplificado: FoodRoller ahora es una lista plana de frases, sin
+// categorias/sub-rollers. Aceptar habla directo la opcion elegida.)
 
 void ui_event_AceptarButton_food(lv_event_t * e)
 {
     char buf[64];
     lv_roller_get_selected_str(ui_FoodRoller, buf, sizeof(buf));
-
-    lv_obj_add_flag(ui_FoodRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_AceptarButton1, LV_OBJ_FLAG_HIDDEN);
-
-    if (strcmp(buf, "Queso...") == 0) {
-        lv_obj_remove_flag(ui_CheeseRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label23, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Pasta...") == 0) {
-        lv_obj_remove_flag(ui_PastaRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label24, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Verdura...") == 0) {
-        lv_obj_remove_flag(ui_VeggieRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label26, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Dulces...") == 0) {
-        lv_obj_remove_flag(ui_CandyRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label27, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Bebidas...") == 0) {
-        lv_obj_remove_flag(ui_DrinkRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label28, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Pescado...") == 0) {
-        lv_obj_remove_flag(ui_FishRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label29, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        tts_speak(buf);
-        show_food_main();
-    }
-}
-
-void ui_event_CancelButton_food(lv_event_t * e)
-{
-    show_food_main();
-}
-
-void ui_event_AceptButton_food(lv_event_t * e)
-{
-    char buf[64];
-    lv_obj_t *active = NULL;
-
-    if (!lv_obj_has_flag(ui_CheeseRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_CheeseRoller;
-    else if (!lv_obj_has_flag(ui_PastaRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_PastaRoller;
-    else if (!lv_obj_has_flag(ui_VeggieRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_VeggieRoller;
-    else if (!lv_obj_has_flag(ui_CandyRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_CandyRoller;
-    else if (!lv_obj_has_flag(ui_DrinkRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_DrinkRoller;
-    else if (!lv_obj_has_flag(ui_FishRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_FishRoller;
-
-    if (active) {
-        lv_roller_get_selected_str(active, buf, sizeof(buf));
-        tts_speak(buf);
-    }
-
-    show_food_main();
+    tts_speak(buf);
 }
 
 // ======================= PIAM Pro: SOCIAL =======================
@@ -398,10 +289,8 @@ static int s_hour_number = 1;
 static void hide_all_social_subrollers(void)
 {
     lv_obj_add_flag(ui_WeekDayRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_MonthRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_TimeRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_HourRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_WeatherRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_AskRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_CancelButton3, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_AceptButton3, LV_OBJ_FLAG_HIDDEN);
@@ -427,10 +316,6 @@ void ui_event_AceptarButton_social(lv_event_t * e)
         lv_obj_remove_flag(ui_WeekDayRoller, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_CancelButton3, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_AceptButton3, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Mes...") == 0) {
-        lv_obj_remove_flag(ui_MonthRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton3, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton3, LV_OBJ_FLAG_HIDDEN);
     } else if (strcmp(buf, "Tiempo...") == 0) {
         lv_obj_remove_flag(ui_TimeRoller, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_CancelButton3, LV_OBJ_FLAG_HIDDEN);
@@ -440,10 +325,6 @@ void ui_event_AceptarButton_social(lv_event_t * e)
         lv_label_set_text(ui_Label40, "1");
         lv_obj_remove_flag(ui_HourRoller, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_NumberButton, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton3, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Clima...") == 0) {
-        lv_obj_remove_flag(ui_WeatherRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton3, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_AceptButton3, LV_OBJ_FLAG_HIDDEN);
     } else if (strcmp(buf, "Consultas...") == 0) {
         lv_obj_remove_flag(ui_AskRoller, LV_OBJ_FLAG_HIDDEN);
@@ -490,9 +371,7 @@ void ui_event_AceptButton_social(lv_event_t * e)
 
     lv_obj_t *active = NULL;
     if (!lv_obj_has_flag(ui_WeekDayRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_WeekDayRoller;
-    else if (!lv_obj_has_flag(ui_MonthRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_MonthRoller;
     else if (!lv_obj_has_flag(ui_TimeRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_TimeRoller;
-    else if (!lv_obj_has_flag(ui_WeatherRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_WeatherRoller;
     else if (!lv_obj_has_flag(ui_AskRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_AskRoller;
 
     if (active) {
@@ -509,7 +388,6 @@ static void hide_all_animo_subrollers(void)
 {
     lv_obj_add_flag(ui_PositionRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_BodyRoller, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(ui_EmotionRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_RutineRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_ColorRoller, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(ui_SportRoller, LV_OBJ_FLAG_HIDDEN);
@@ -539,10 +417,6 @@ void ui_event_AceptarButton_animo(lv_event_t * e)
         lv_obj_remove_flag(ui_AceptButton2, LV_OBJ_FLAG_HIDDEN);
     } else if (strcmp(buf, "Cuerpo...") == 0) {
         lv_obj_remove_flag(ui_BodyRoller, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_CancelButton2, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_AceptButton2, LV_OBJ_FLAG_HIDDEN);
-    } else if (strcmp(buf, "Emociones...") == 0) {
-        lv_obj_remove_flag(ui_EmotionRoller, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_CancelButton2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(ui_AceptButton2, LV_OBJ_FLAG_HIDDEN);
     } else if (strcmp(buf, "Rutina diaria...") == 0) {
@@ -579,7 +453,6 @@ void ui_event_AceptButton_animo(lv_event_t * e)
 
     if (!lv_obj_has_flag(ui_PositionRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_PositionRoller;
     else if (!lv_obj_has_flag(ui_BodyRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_BodyRoller;
-    else if (!lv_obj_has_flag(ui_EmotionRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_EmotionRoller;
     else if (!lv_obj_has_flag(ui_RutineRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_RutineRoller;
     else if (!lv_obj_has_flag(ui_ColorRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_ColorRoller;
     else if (!lv_obj_has_flag(ui_SportRoller, LV_OBJ_FLAG_HIDDEN)) active = ui_SportRoller;
@@ -776,7 +649,7 @@ void ui_WordYPhra_screen_init(void)
 
     ui_DailyRoller = lv_roller_create(ui_DailyScreen);
     lv_roller_set_options(ui_DailyRoller,
-                          "Sí\nNo\nHola\nBien\nMal\nGracias\nPor favor\nAyuda\nEspera\nBasta\nDolor\nFrío\nCalor\nBaño\nAgua\nAdjetivos\nVerbos\nCantidad\nMatices\nNinguno\nPersonas\nNacionalidad\nEstado civil",
+                          "Sí\nNo\nHola\nBien\nMal\nGracias\nPor favor\nAyuda\nEspera\nBasta\nDolor\nFrío\nCalor\nBaño\nAgua\nAdjetivos\nVerbos\nCantidad\nNinguno\nPersonas\nNacionalidad\nEstado civil",
                           LV_ROLLER_MODE_NORMAL);
     lv_obj_set_height(ui_DailyRoller, 125);
     lv_obj_set_width(ui_DailyRoller, LV_SIZE_CONTENT);   /// 1
@@ -1043,7 +916,7 @@ void ui_WordYPhra_screen_init(void)
 
     ui_FoodRoller = lv_roller_create(ui_FoodScreen);
     lv_roller_set_options(ui_FoodRoller,
-                          "Hambre\nSed\nAgua\nPan\nLeche\nFruta\nCarne\nPollo\nArroz\nSopa\nEnsalada\nPostre\nCafé\nJugo\nMás\nHuevo\nQueso...\nPasta...\nVerdura...\nDulces...\nBebidas...\nPescado...",
+                          "Hambre\nSed\nAgua\nPan\nLeche\nFruta\nCarne\nPollo\nArroz\nSopa\nEnsalada\nPostre\nCafé\nJugo\nMás\nHuevo\nPescado\nQueso\nFideo\nVerdura\nBebida\nComida\nPasta\nCafé\nTé\nMate\nTereré\nGaseosa\nChocolate\nCaramelo\nGalleta\nTorta\nHelado\nFlan\nAlfajor\nTomate\nLechuga\nZanahoria\nPapa\nCebolla\nZapallo\nChoclo",
                           LV_ROLLER_MODE_NORMAL);
     lv_obj_set_height(ui_FoodRoller, 125);
     lv_obj_set_width(ui_FoodRoller, LV_SIZE_CONTENT);   /// 1
@@ -1092,245 +965,6 @@ void ui_WordYPhra_screen_init(void)
     lv_obj_set_style_text_opa(ui_Label25, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label25, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_CancelButton1 = lv_button_create(ui_FoodScreen);
-    lv_obj_set_width(ui_CancelButton1, 125);
-    lv_obj_set_height(ui_CancelButton1, 40);
-    lv_obj_set_x(ui_CancelButton1, -85);
-    lv_obj_set_y(ui_CancelButton1, 115);
-    lv_obj_set_align(ui_CancelButton1, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_CancelButton1, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_remove_flag(ui_CancelButton1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(ui_CancelButton1, lv_color_hex(0x9A8350), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CancelButton1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_color(ui_CancelButton1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_opa(ui_CancelButton1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label21 = lv_label_create(ui_CancelButton1);
-    lv_obj_set_width(ui_Label21, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label21, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Label21, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label21, "Cancelar");
-    lv_obj_set_style_text_font(ui_Label21, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_AceptButton1 = lv_button_create(ui_FoodScreen);
-    lv_obj_set_width(ui_AceptButton1, 125);
-    lv_obj_set_height(ui_AceptButton1, 40);
-    lv_obj_set_x(ui_AceptButton1, 85);
-    lv_obj_set_y(ui_AceptButton1, 115);
-    lv_obj_set_align(ui_AceptButton1, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_AceptButton1, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_remove_flag(ui_AceptButton1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(ui_AceptButton1, lv_color_hex(0xFFD169), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_AceptButton1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_color(ui_AceptButton1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_opa(ui_AceptButton1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label22 = lv_label_create(ui_AceptButton1);
-    lv_obj_set_width(ui_Label22, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label22, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Label22, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label22, "Aceptar");
-    lv_obj_set_style_text_color(ui_Label22, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label22, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label22, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_CheeseRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_CheeseRoller,
-                          "Paraguay\nFresco\nDuro\nMozzarella\nCrema\nRallado\nUntable\nRicotta\nAhumado\nAzul\nProvolone\nSardo\nCuartirolo",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_CheeseRoller, 125);
-    lv_obj_set_width(ui_CheeseRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_CheeseRoller, 0);
-    lv_obj_set_y(ui_CheeseRoller, -2);
-    lv_obj_set_align(ui_CheeseRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_CheeseRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_CheeseRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_CheeseRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_CheeseRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_CheeseRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CheeseRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_CheeseRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_CheeseRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_CheeseRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CheeseRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label23 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label23, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label23, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label23, -92);
-    lv_obj_set_y(ui_Label23, -112);
-    lv_obj_set_align(ui_Label23, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label23, "Quesos");
-    lv_obj_add_flag(ui_Label23, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label23, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label23, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label23, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_PastaRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_PastaRoller,
-                          "Fideos\nÑoquis\nRavioles\nCanelones\nLasaña\nSpaghetti\nTallarines\nMacarrones\nFetuccine\nSorrentinos",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_PastaRoller, 125);
-    lv_obj_set_width(ui_PastaRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_PastaRoller, 0);
-    lv_obj_set_y(ui_PastaRoller, -2);
-    lv_obj_set_align(ui_PastaRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_PastaRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_PastaRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_PastaRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_PastaRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_PastaRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_PastaRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_PastaRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_PastaRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_PastaRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_PastaRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label24 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label24, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label24, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label24, -92);
-    lv_obj_set_y(ui_Label24, -112);
-    lv_obj_set_align(ui_Label24, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label24, "Pastas");
-    lv_obj_add_flag(ui_Label24, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label24, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label24, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label24, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_VeggieRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_VeggieRoller,
-                          "Tomate\nLechuga\nZanahoria\nPapa\nCebolla\nZapallo\nChoclo\nZapallito\nBerenjena\nPepino\nRepollo\nBrócoli\nEspinaca\nMandioca\nBatata",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_VeggieRoller, 125);
-    lv_obj_set_width(ui_VeggieRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_VeggieRoller, 0);
-    lv_obj_set_y(ui_VeggieRoller, -2);
-    lv_obj_set_align(ui_VeggieRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_VeggieRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_VeggieRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_VeggieRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_VeggieRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_VeggieRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_VeggieRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_VeggieRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_VeggieRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_VeggieRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_VeggieRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label26 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label26, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label26, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label26, -92);
-    lv_obj_set_y(ui_Label26, -112);
-    lv_obj_set_align(ui_Label26, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label26, "Verduras");
-    lv_obj_add_flag(ui_Label26, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label26, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label26, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label26, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_CandyRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_CandyRoller,
-                          "Chocolate\nCaramelo\nGalleta\nTorta\nHelado\nFlan\nAlfajor\nDulce de leche\nMiel\nMermelada\nChicle\nBombón\nCocadas\nChipa guasu dulce\nKa'i ladrillo",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_CandyRoller, 125);
-    lv_obj_set_width(ui_CandyRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_CandyRoller, 0);
-    lv_obj_set_y(ui_CandyRoller, -2);
-    lv_obj_set_align(ui_CandyRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_CandyRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_CandyRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_CandyRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_CandyRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_CandyRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CandyRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_CandyRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_CandyRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_CandyRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CandyRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label27 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label27, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label27, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label27, -92);
-    lv_obj_set_y(ui_Label27, -112);
-    lv_obj_set_align(ui_Label27, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label27, "Dulces");
-    lv_obj_add_flag(ui_Label27, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label27, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label27, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label27, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_DrinkRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_DrinkRoller,
-                          "Agua\nJugo\nLeche\nCafé\nTé\nMate\nTereré\nGaseosa\nYogur bebible\nBatido\nAgua con gas\nLimonada\nCocido",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_DrinkRoller, 125);
-    lv_obj_set_width(ui_DrinkRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_DrinkRoller, 0);
-    lv_obj_set_y(ui_DrinkRoller, -2);
-    lv_obj_set_align(ui_DrinkRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DrinkRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_DrinkRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DrinkRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_DrinkRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_DrinkRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_DrinkRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_DrinkRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_DrinkRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_DrinkRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_DrinkRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label28 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label28, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label28, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label28, -92);
-    lv_obj_set_y(ui_Label28, -112);
-    lv_obj_set_align(ui_Label28, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label28, "Bebidas");
-    lv_obj_add_flag(ui_Label28, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label28, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label28, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label28, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_FishRoller = lv_roller_create(ui_FoodScreen);
-    lv_roller_set_options(ui_FishRoller, "Surubí\nDorado\nPacú\nBoga\nTilapia\nAtún\nMerluza\nSalmón\nSábalo\nCorvina",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_FishRoller, 125);
-    lv_obj_set_width(ui_FishRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_FishRoller, 0);
-    lv_obj_set_y(ui_FishRoller, -2);
-    lv_obj_set_align(ui_FishRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_FishRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_FishRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_FishRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_FishRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_FishRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_FishRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_FishRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_FishRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_FishRoller, lv_color_hex(0xE0B54D), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_FishRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_Label29 = lv_label_create(ui_FoodScreen);
-    lv_obj_set_width(ui_Label29, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label29, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label29, -92);
-    lv_obj_set_y(ui_Label29, -112);
-    lv_obj_set_align(ui_Label29, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label29, "Pescado");
-    lv_obj_add_flag(ui_Label29, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_Label29, lv_color_hex(0xF3C450), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label29, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label29, &ui_font_DESIGNER36, LV_PART_MAIN | LV_STATE_DEFAULT);
-
     ui_SocialScreen = lv_obj_create(ui_WordYPhra);
     lv_obj_set_width(ui_SocialScreen, 480);
     lv_obj_set_height(ui_SocialScreen, 320);
@@ -1346,7 +980,7 @@ void ui_WordYPhra_screen_init(void)
 
     ui_SocialRoller = lv_roller_create(ui_SocialScreen);
     lv_roller_set_options(ui_SocialRoller,
-                          "Hola\nBuen día\nBuenas tardes\nBuenas noches\n¿Qué tal?\nMucho gusto\nBienvenido\nEncantado de conocerte\n¡Qué alegría verte!\nAdiós\nChau\nMe voy\nHasta luego\nHasta pronto\nNos vemos\nCuídate\nQue tengas buen día\nDía de semana...\nMes...\nTiempo...\nHora...\nClima...\nConsultas...",
+                          "Hola\nBuen día\nBuenas tardes\nBuenas noches\n¿Qué tal?\nMucho gusto\nBienvenido\nEncantado de conocerte\n¡Qué alegría verte!\nAdiós\nChau\nMe voy\nHasta luego\nHasta pronto\nNos vemos\nCuídate\nQue tengas buen día\nDía de semana...\nTiempo...\nHora...\nConsultas...",
                           LV_ROLLER_MODE_NORMAL);
     lv_obj_set_height(ui_SocialRoller, 125);
     lv_obj_set_width(ui_SocialRoller, LV_SIZE_CONTENT);   /// 1
@@ -1477,27 +1111,6 @@ void ui_WordYPhra_screen_init(void)
     lv_obj_set_style_bg_color(ui_WeekDayRoller, lv_color_hex(0x39B639), LV_PART_SELECTED | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_WeekDayRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
 
-    ui_MonthRoller = lv_roller_create(ui_SocialScreen);
-    lv_roller_set_options(ui_MonthRoller,
-                          "Actual\nEnero\nFebrero\nMarzo\nAbril\nMayo\nJunio\nJulio\nAgosto\nSeptiembre\nOctubre\nNoviembre\nDiciembre",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_MonthRoller, 125);
-    lv_obj_set_width(ui_MonthRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_MonthRoller, 0);
-    lv_obj_set_y(ui_MonthRoller, -2);
-    lv_obj_set_align(ui_MonthRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_MonthRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_MonthRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_MonthRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_MonthRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_MonthRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_MonthRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_MonthRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_MonthRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_MonthRoller, lv_color_hex(0x39B639), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_MonthRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
     ui_TimeRoller = lv_roller_create(ui_SocialScreen);
     lv_roller_set_options(ui_TimeRoller,
                           "Hoy\nMañana\nAyer\nAhora\nDespués\nAntes\nEsta semana\nLa semana que viene\nEste mes\nTodo el día\nUn rato\nUn momento\nTarde\nTemprano\nA la noche\nA la mañana\nA la tarde",
@@ -1540,26 +1153,6 @@ void ui_WordYPhra_screen_init(void)
     lv_obj_set_style_bg_color(ui_HourRoller, lv_color_hex(0x39B639), LV_PART_SELECTED | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_HourRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
 
-    ui_WeatherRoller = lv_roller_create(ui_SocialScreen);
-    lv_roller_set_options(ui_WeatherRoller, "Soleado\nNublado\nLluvioso\nVentoso\nFrío\nCalor\nHúmedo\nTormenta\nFresco",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_WeatherRoller, 125);
-    lv_obj_set_width(ui_WeatherRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_WeatherRoller, 0);
-    lv_obj_set_y(ui_WeatherRoller, -2);
-    lv_obj_set_align(ui_WeatherRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_WeatherRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_WeatherRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_WeatherRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_WeatherRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_WeatherRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_WeatherRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_WeatherRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_WeatherRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_WeatherRoller, lv_color_hex(0x39B639), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_WeatherRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
     ui_AskRoller = lv_roller_create(ui_SocialScreen);
     lv_roller_set_options(ui_AskRoller,
                           "¿Cómo estás?\n¿Qué estás haciendo?\n¿Qué pasó?\n¿Dónde estamos?\n¿Cómo te llamás?\n¿Querés algo?\n¿Qué querés hacer?\n¿Podés ayudarme?\n¿Dónde está el baño?\n¿Qué te pasa?\n¿Cuál es la contraseña?\n¿Podés esperarme?\n¿Me podés acompañar?\n¿Cómo llego a este lugar?\n¿Cuánto cuesta?\nPorque sí\nPorque no\nPorque lo necesito\nPorque necesito hacerlo\nPorque no quiero\nPorque quiero\nPorque puedo\nPorque no puedo\nNo sé por qué\nNo sé",
@@ -1594,7 +1187,7 @@ void ui_WordYPhra_screen_init(void)
 
     ui_AnimoRoller = lv_roller_create(ui_AnimoScreen);
     lv_roller_set_options(ui_AnimoRoller,
-                          "¡Qué gusto!\nEstoy triste\nEstoy cansado\nTengo hambre\nTengo sed\n¡Qué frío que hace!\n¡Qué calor que hace!\nNo me siento bien\n¡Estoy bien!\nEstoy preocupado\n¡Estoy muy nervioso!\nTengo sueño\nNecesito descansar\nNecesito ayuda\nMe duele acá\nPosiciones...\nCuerpo...\nEmociones...\nRutina diaria...\nColores...\nDeportes...\nLugares...",
+                          "¡Qué gusto!\nEstoy triste\nEstoy cansado\nTengo hambre\nTengo sed\n¡Qué frío que hace!\n¡Qué calor que hace!\nNo me siento bien\n¡Estoy bien!\nEstoy preocupado\n¡Estoy muy nervioso!\nTengo sueño\nNecesito descansar\nNecesito ayuda\nMe duele acá\nPosiciones...\nCuerpo...\nRutina diaria...\nColores...\nDeportes...\nLugares...",
                           LV_ROLLER_MODE_NORMAL);
     lv_obj_set_height(ui_AnimoRoller, 125);
     lv_obj_set_width(ui_AnimoRoller, LV_SIZE_CONTENT);   /// 1
@@ -1673,27 +1266,6 @@ void ui_WordYPhra_screen_init(void)
 
     lv_obj_set_style_bg_color(ui_BodyRoller, lv_color_hex(0x2050FF), LV_PART_SELECTED | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_BodyRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
-
-    ui_EmotionRoller = lv_roller_create(ui_AnimoScreen);
-    lv_roller_set_options(ui_EmotionRoller,
-                          "Feliz\nTriste\nEnojado\nAsustado\nSorprendido\nAburrido\nAvergonzado\nCeloso\nConfundido\nOrgulloso\nCulpable\nTranquilo\nAnsioso\nFrustrado",
-                          LV_ROLLER_MODE_NORMAL);
-    lv_obj_set_height(ui_EmotionRoller, 125);
-    lv_obj_set_width(ui_EmotionRoller, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_x(ui_EmotionRoller, 0);
-    lv_obj_set_y(ui_EmotionRoller, -2);
-    lv_obj_set_align(ui_EmotionRoller, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_EmotionRoller, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_set_style_text_color(ui_EmotionRoller, lv_color_hex(0x3B3B3B), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_EmotionRoller, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_EmotionRoller, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_EmotionRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_EmotionRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_EmotionRoller, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_EmotionRoller, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_EmotionRoller, lv_color_hex(0x2050FF), LV_PART_SELECTED | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_EmotionRoller, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
 
     ui_RutineRoller = lv_roller_create(ui_AnimoScreen);
     lv_roller_set_options(ui_RutineRoller,
@@ -1846,8 +1418,6 @@ void ui_WordYPhra_screen_init(void)
     lv_obj_add_event_cb(ui_MascButton, ui_event_MascButton_daily, LV_EVENT_CLICKED, NULL);
 
     lv_obj_add_event_cb(ui_AceptarButton1, ui_event_AceptarButton_food, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_CancelButton1, ui_event_CancelButton_food, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_AceptButton1, ui_event_AceptButton_food, LV_EVENT_CLICKED, NULL);
 
     lv_obj_add_event_cb(ui_AceptarButton3, ui_event_AceptarButton_social, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_CancelButton3, ui_event_CancelButton_social, LV_EVENT_CLICKED, NULL);
@@ -1899,22 +1469,6 @@ void ui_WordYPhra_screen_destroy(void)
     ui_AceptarButton1 = NULL;
     ui_Label20 = NULL;
     ui_Label25 = NULL;
-    ui_CancelButton1 = NULL;
-    ui_Label21 = NULL;
-    ui_AceptButton1 = NULL;
-    ui_Label22 = NULL;
-    ui_CheeseRoller = NULL;
-    ui_Label23 = NULL;
-    ui_PastaRoller = NULL;
-    ui_Label24 = NULL;
-    ui_VeggieRoller = NULL;
-    ui_Label26 = NULL;
-    ui_CandyRoller = NULL;
-    ui_Label27 = NULL;
-    ui_DrinkRoller = NULL;
-    ui_Label28 = NULL;
-    ui_FishRoller = NULL;
-    ui_Label29 = NULL;
     ui_SocialScreen = NULL;
     ui_SocialRoller = NULL;
     ui_AceptarButton3 = NULL;
@@ -1927,10 +1481,8 @@ void ui_WordYPhra_screen_destroy(void)
     ui_NumberButton = NULL;
     ui_Label40 = NULL;
     ui_WeekDayRoller = NULL;
-    ui_MonthRoller = NULL;
     ui_TimeRoller = NULL;
     ui_HourRoller = NULL;
-    ui_WeatherRoller = NULL;
     ui_AskRoller = NULL;
     ui_AnimoScreen = NULL;
     ui_AnimoRoller = NULL;
@@ -1938,7 +1490,6 @@ void ui_WordYPhra_screen_destroy(void)
     ui_Label30 = NULL;
     ui_PositionRoller = NULL;
     ui_BodyRoller = NULL;
-    ui_EmotionRoller = NULL;
     ui_RutineRoller = NULL;
     ui_ColorRoller = NULL;
     ui_SportRoller = NULL;

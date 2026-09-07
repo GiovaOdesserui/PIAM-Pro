@@ -30,6 +30,8 @@
 #include "esp_spiffs.h"
 #include "esp_codec_dev.h"
 #include "cJSON.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 
 static const char *TAG = "tts_audio";
 
@@ -55,14 +57,23 @@ extern esp_codec_dev_handle_t input_dev;
 static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 
+// PIAM Pro: mientras esto es true, un intento de conexion MANUAL
+// (desde wifi_connect_and_save) esta en curso -- el reconectado
+// automatico de abajo se queda quieto para no pelear por el control
+// de la radio WiFi al mismo tiempo (eso causaba "sta is connecting,
+// cannot set config" y un loop de desconexion/reconexion sin fin).
+static volatile bool s_manual_connect_in_progress = false;
+
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                 int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGW(TAG, "WiFi desconectado, reintentando...");
-        esp_wifi_connect();
+        if (!s_manual_connect_in_progress) {
+            ESP_LOGW(TAG, "WiFi desconectado, reintentando...");
+            esp_wifi_connect();
+        }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "WiFi conectado, IP: " IPSTR, IP2STR(&event->ip_info.ip));
@@ -88,16 +99,41 @@ static void wifi_init(void)
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
                                                           &wifi_event_handler, NULL, &instance_got_ip));
 
+    // PIAM Pro: si el usuario ya configuro una red desde Ajustes, usamos
+    // esa (guardada en NVS). Si no hay nada guardado, usamos la de
+    // fabrica/desarrollo como default.
+    char saved_ssid[33] = {0};
+    char saved_pass[65] = {0};
+    bool has_saved = false;
+
+    nvs_handle_t nvs;
+    if (nvs_open("piam_wifi", NVS_READONLY, &nvs) == ESP_OK) {
+        size_t ssid_len = sizeof(saved_ssid);
+        size_t pass_len = sizeof(saved_pass);
+        if (nvs_get_str(nvs, "ssid", saved_ssid, &ssid_len) == ESP_OK &&
+            nvs_get_str(nvs, "pass", saved_pass, &pass_len) == ESP_OK &&
+            saved_ssid[0] != '\0') {
+            has_saved = true;
+        }
+        nvs_close(nvs);
+    }
+
     wifi_config_t wifi_config = {};
-    strncpy((char *)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
-    strncpy((char *)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
+    if (has_saved) {
+        ESP_LOGI(TAG, "Usando WiFi guardada en Ajustes: '%s'", saved_ssid);
+        strncpy((char *)wifi_config.sta.ssid, saved_ssid, sizeof(wifi_config.sta.ssid));
+        strncpy((char *)wifi_config.sta.password, saved_pass, sizeof(wifi_config.sta.password));
+    } else {
+        strncpy((char *)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
+        strncpy((char *)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
+    }
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "Conectando a WiFi '%s'...", WIFI_SSID);
+    ESP_LOGI(TAG, "Conectando a WiFi '%s'...", (const char *)wifi_config.sta.ssid);
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT,
                                             pdFALSE, pdFALSE, pdMS_TO_TICKS(WIFI_CONNECT_TIMEOUT_MS));
 
@@ -555,6 +591,102 @@ bool stt_stop_and_transcribe(void)
 const char *stt_get_last_transcript(void)
 {
     return s_stt_transcript;
+}
+
+// =====================================================================
+// WiFi: escaneo, conexion y guardado persistente
+// =====================================================================
+
+int wifi_scan_networks(wifi_scan_result_t *out, int max_results)
+{
+    wifi_scan_config_t scan_config = {};
+    scan_config.show_hidden = false;
+
+    ESP_LOGI(TAG, "Escaneando redes WiFi cercanas...");
+    esp_err_t err = esp_wifi_scan_start(&scan_config, true); // bloqueante
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error al escanear: %s", esp_err_to_name(err));
+        return 0;
+    }
+
+    uint16_t ap_count = 0;
+    esp_wifi_scan_get_ap_num(&ap_count);
+    if (ap_count == 0) return 0;
+
+    wifi_ap_record_t *ap_records = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * ap_count);
+    if (!ap_records) return 0;
+
+    esp_wifi_scan_get_ap_records(&ap_count, ap_records);
+
+    // Copiamos a 'out', evitando duplicados (la misma red puede
+    // aparecer varias veces si hay varios puntos de acceso), y
+    // quedandonos con hasta max_results, ordenados por señal (mejor
+    // primero, ya que esp_wifi ya los devuelve asi por default).
+    int count = 0;
+    for (int i = 0; i < ap_count && count < max_results; i++) {
+        const char *ssid = (const char *)ap_records[i].ssid;
+        if (ssid[0] == '\0') continue; // red oculta, la saltamos
+
+        bool duplicate = false;
+        for (int j = 0; j < count; j++) {
+            if (strcmp(out[j].ssid, ssid) == 0) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (duplicate) continue;
+
+        strncpy(out[count].ssid, ssid, sizeof(out[count].ssid) - 1);
+        out[count].ssid[sizeof(out[count].ssid) - 1] = '\0';
+        out[count].rssi = ap_records[i].rssi;
+        count++;
+    }
+
+    free(ap_records);
+    ESP_LOGI(TAG, "Encontradas %d redes", count);
+    return count;
+}
+
+bool wifi_connect_and_save(const char *ssid, const char *password)
+{
+    ESP_LOGI(TAG, "Conectando a '%s'...", ssid);
+
+    s_manual_connect_in_progress = true; // el auto-reconectado se queda quieto
+
+    xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+
+    esp_wifi_disconnect();
+    vTaskDelay(pdMS_TO_TICKS(200)); // le damos tiempo real a desconectar antes de reconfigurar
+
+    wifi_config_t wifi_config = {};
+    strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_connect();
+
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT,
+                                            pdFALSE, pdFALSE, pdMS_TO_TICKS(WIFI_CONNECT_TIMEOUT_MS));
+
+    bool ok = (bits & WIFI_CONNECTED_BIT) != 0;
+
+    s_manual_connect_in_progress = false; // listo, el auto-reconectado puede retomar
+
+    if (ok) {
+        ESP_LOGI(TAG, "Conectado. Guardando en NVS para el proximo arranque...");
+        nvs_handle_t nvs;
+        if (nvs_open("piam_wifi", NVS_READWRITE, &nvs) == ESP_OK) {
+            nvs_set_str(nvs, "ssid", ssid);
+            nvs_set_str(nvs, "pass", password);
+            nvs_commit(nvs);
+            nvs_close(nvs);
+        }
+    } else {
+        ESP_LOGW(TAG, "No se pudo conectar a '%s' (contraseña incorrecta o fuera de rango)", ssid);
+    }
+
+    return ok;
 }
 
 // =====================================================================

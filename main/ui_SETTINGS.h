@@ -15,7 +15,25 @@ extern void ui_SETTINGS_screen_init(void);
 extern void ui_SETTINGS_screen_destroy(void);
 extern void ui_event_SETTINGS(lv_event_t * e);
 extern lv_obj_t * ui_SETTINGS;
+extern lv_obj_t * ui_OptionsPanel;
+extern void ui_event_Button5(lv_event_t * e);
+extern lv_obj_t * ui_Button5;
+extern lv_obj_t * ui_Label44;
+extern lv_obj_t * ui_Label46;
+extern void ui_event_WIFIPanel(lv_event_t * e);
+extern lv_obj_t * ui_WIFIPanel;
+extern lv_obj_t * ui_Label24;
+extern lv_obj_t * ui_WebsPanel;
+extern lv_obj_t * ui_Button1;
+extern lv_obj_t * ui_Label23;
+extern lv_obj_t * ui_Button2;
+extern lv_obj_t * ui_Label26;
+extern lv_obj_t * ui_PassPanel;
+extern lv_obj_t * ui_Label27;
+extern lv_obj_t * ui_Keyboard2;
+extern lv_obj_t * ui_TextArea4;
 // CUSTOM VARIABLES
+extern void ui_event_Keyboard2_ready(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

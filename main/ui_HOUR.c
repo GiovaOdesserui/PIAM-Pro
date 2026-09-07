@@ -4,12 +4,26 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include "esp_pcf85063_port.h"
+#include "esp_axp2101_port.h"
+#include <stdio.h>
 
 lv_obj_t * ui_HOUR = NULL;
 lv_obj_t * ui_Container1 = NULL;
 lv_obj_t * ui_Label1 = NULL;
 lv_obj_t * ui_Label2 = NULL;
+lv_obj_t * ui_Bar4 = NULL;
+lv_obj_t * ui_Label45 = NULL;
 // event funtions
+void ui_event_HOUR(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_SCREEN_LOADED) {
+        Blink_Animation(ui_Label1, 0);
+    }
+}
+
 void ui_event_Container1(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -18,6 +32,34 @@ void ui_event_Container1(lv_event_t * e)
         _ui_screen_change(&ui_MENU, LV_SCR_LOAD_ANIM_FADE_ON, 100, 0, &ui_MENU_screen_init);
     }
 }
+
+// ======================= PIAM Pro: reloj + bateria + fecha del RTC =======================
+
+static lv_timer_t *s_hour_rtc_timer = NULL;
+
+static void hour_rtc_timer_cb(lv_timer_t *timer)
+{
+    int hour, minute, day, month;
+    piam_rtc_get_hour_minute(&hour, &minute);
+    piam_rtc_get_date(&day, &month);
+
+    char buf[4];
+    snprintf(buf, sizeof(buf), "%02d", hour);
+    lv_label_set_text(ui_Label1, buf);
+    snprintf(buf, sizeof(buf), "%02d", minute);
+    lv_label_set_text(ui_Label2, buf);
+
+    char date_buf[8];
+    snprintf(date_buf, sizeof(date_buf), "%02d/%02d", day, month);
+    lv_label_set_text(ui_Label45, date_buf);
+
+    int battery_pct = piam_battery_get_percent();
+    if (battery_pct >= 0) {
+        lv_bar_set_value(ui_Bar4, battery_pct, LV_ANIM_OFF);
+    }
+}
+
+// ===========================================================================================
 
 // build funtions
 
@@ -59,12 +101,51 @@ void ui_HOUR_screen_init(void)
     lv_obj_set_style_text_opa(ui_Label2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label2, &ui_font_Font100, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Bar4 = lv_bar_create(ui_HOUR);
+    lv_bar_set_value(ui_Bar4, 50, LV_ANIM_OFF);
+    lv_bar_set_start_value(ui_Bar4, 0, LV_ANIM_OFF);
+    lv_obj_set_width(ui_Bar4, 75);
+    lv_obj_set_height(ui_Bar4, 35);
+    lv_obj_set_x(ui_Bar4, -35);
+    lv_obj_set_y(ui_Bar4, 25);
+    lv_obj_set_align(ui_Bar4, LV_ALIGN_TOP_RIGHT);
+    lv_obj_set_style_bg_color(ui_Bar4, lv_color_hex(0x99D3A8), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Bar4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_obj_set_style_bg_color(ui_Bar4, lv_color_hex(0x08FF4A), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Bar4, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+
+    //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
+    if(lv_obj_get_style_pad_top(ui_Bar4, LV_PART_MAIN) > 0) lv_obj_set_style_pad_right(ui_Bar4,
+                                                                                           lv_obj_get_style_pad_right(ui_Bar4, LV_PART_MAIN) + 1, LV_PART_MAIN);
+    ui_Label45 = lv_label_create(ui_HOUR);
+    lv_obj_set_width(ui_Label45, 110);
+    lv_obj_set_height(ui_Label45, 40);
+    lv_obj_set_x(ui_Label45, 35);
+    lv_obj_set_y(ui_Label45, 25);
+    lv_label_set_text(ui_Label45, "30/01");
+    lv_obj_set_style_text_color(ui_Label45, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label45, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_Label45, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label45, &ui_font_DESIGNER25, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui_Label45, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Label45, lv_color_hex(0x0EADFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Label45, 50, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_Container1, ui_event_Container1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_HOUR, ui_event_HOUR, LV_EVENT_ALL, NULL);
+
+    hour_rtc_timer_cb(NULL);
+    s_hour_rtc_timer = lv_timer_create(hour_rtc_timer_cb, 1000, NULL);
 
 }
 
 void ui_HOUR_screen_destroy(void)
 {
+    if (s_hour_rtc_timer) {
+        lv_timer_del(s_hour_rtc_timer);
+        s_hour_rtc_timer = NULL;
+    }
     if(ui_HOUR) lv_obj_del(ui_HOUR);
 
     // NULL screen variables
@@ -72,5 +153,7 @@ void ui_HOUR_screen_destroy(void)
     ui_Container1 = NULL;
     ui_Label1 = NULL;
     ui_Label2 = NULL;
+    ui_Bar4 = NULL;
+    ui_Label45 = NULL;
 
 }

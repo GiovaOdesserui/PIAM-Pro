@@ -16,21 +16,25 @@ extern void ui_MENU_screen_destroy(void);
 extern lv_obj_t * ui_MENU;
 extern void ui_event_CronosButton(lv_event_t * e);
 extern lv_obj_t * ui_CronosButton;
-extern lv_obj_t * ui_PaintButton;
+extern lv_obj_t * ui_Image12;
 extern void ui_event_CalcButton(lv_event_t * e);
 extern lv_obj_t * ui_CalcButton;
+extern lv_obj_t * ui_Image10;
 extern void ui_event_SOSButton(lv_event_t * e);
 extern lv_obj_t * ui_SOSButton;
+extern lv_obj_t * ui_Image9;
 extern void ui_event_SetButton(lv_event_t * e);
 extern lv_obj_t * ui_SetButton;
+extern lv_obj_t * ui_Image13;
 extern void ui_event_PSButton(lv_event_t * e);
 extern lv_obj_t * ui_PSButton;
+extern lv_obj_t * ui_Container2;
+extern lv_obj_t * ui_Image11;
 extern void ui_event_OpenMenu(lv_event_t * e);
 extern lv_obj_t * ui_OpenMenu;
 extern lv_obj_t * ui_Label3;
 extern lv_obj_t * ui_Bar2;
 extern lv_obj_t * ui_Label4;
-extern lv_obj_t * ui_Container2;
 extern lv_obj_t * ui_Label5;
 // CUSTOM VARIABLES
 

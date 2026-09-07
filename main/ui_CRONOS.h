@@ -15,6 +15,14 @@ extern void ui_CRONOS_screen_init(void);
 extern void ui_CRONOS_screen_destroy(void);
 extern void ui_event_CRONOS(lv_event_t * e);
 extern lv_obj_t * ui_CRONOS;
+extern lv_obj_t * ui_Label13;
+extern lv_obj_t * ui_MicroSecLabel;
+extern lv_obj_t * ui_SecondLabel;
+extern lv_obj_t * ui_MinuteLabel;
+extern lv_obj_t * ui_DobleDot;
+extern lv_obj_t * ui_Button15;
+extern lv_obj_t * ui_Button16;
+extern lv_obj_t * ui_Label21;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

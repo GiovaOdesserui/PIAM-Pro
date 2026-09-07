@@ -15,6 +15,8 @@ extern void ui_CALCULATOR_screen_init(void);
 extern void ui_CALCULATOR_screen_destroy(void);
 extern void ui_event_CALCULATOR(lv_event_t * e);
 extern lv_obj_t * ui_CALCULATOR;
+extern lv_obj_t * ui_Keyboard3;
+extern lv_obj_t * ui_TextArea5;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

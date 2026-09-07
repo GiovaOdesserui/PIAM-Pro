@@ -23,7 +23,6 @@ lv_obj_t * ui_RecordButton = NULL;
 lv_obj_t * ui_Image7 = NULL;
 lv_obj_t * ui_Placeholder = NULL;
 lv_obj_t * ui_Label34 = NULL;
-lv_obj_t * ui_CancelButton4 = NULL;
 lv_obj_t * ui_Label43 = NULL;
 // event funtions
 void ui_event_PIAMSYS(lv_event_t * e)
@@ -80,15 +79,29 @@ void ui_event_Placeholder(lv_event_t * e)
     if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_active()) == LV_DIR_RIGHT) {
         lv_indev_wait_release(lv_indev_active());
         _ui_flag_modify(ui_Placeholder, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
+        // PIAM Pro: cerrar tambien el panel del microfono completo, y
+        // resetear RecordButton para la proxima vez.
+        lv_obj_remove_state(ui_RecordButton, LV_STATE_CHECKED);
+        lv_obj_add_flag(ui_RecordButton, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(ui_MicPanel, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void ui_event_Label43(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_flag_modify(ui_Placeholder, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
+        // PIAM Pro: mismo reseteo que en el gesto
+        lv_obj_remove_state(ui_RecordButton, LV_STATE_CHECKED);
+        lv_obj_add_flag(ui_RecordButton, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(ui_MicPanel, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
 // ======================= PIAM Pro: STT (Speech to Text) =======================
 
-// RecordButton (checkable, verde->rojo). Al chequear, arranca a grabar.
-// Al deschequear, corta la grabacion y la manda a transcribir -- y
-// se BLOQUEA (ya no se puede clickear/chequear) hasta que se resuelva
-// con Aceptar o Cancelar.
 void ui_event_RecordButton(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -100,14 +113,11 @@ void ui_event_RecordButton(lv_event_t * e)
             stt_start_recording();
         } else {
             stt_stop_and_transcribe();
-            // Bloquear el boton: ya se grabo una vez, hay que resolver
-            // con Aceptar o Cancelar antes de poder grabar de nuevo.
             lv_obj_remove_flag(ui_RecordButton, LV_OBJ_FLAG_CLICKABLE);
         }
     }
 }
 
-// Muestra el texto transcripto en el panel de resultado (Placeholder).
 void ui_event_AceptButton5(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -118,27 +128,11 @@ void ui_event_AceptButton5(lv_event_t * e)
     }
 }
 
-// Descarta todo: cierra el panel del microfono completo y resetea
-// RecordButton para la proxima vez.
 void ui_event_CancelButton5(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if (event_code == LV_EVENT_CLICKED) {
-        lv_obj_remove_state(ui_RecordButton, LV_STATE_CHECKED);
-        lv_obj_add_flag(ui_RecordButton, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_add_flag(ui_MicPanel, LV_OBJ_FLAG_HIDDEN);
-    }
-}
-
-// Cierra el panel de transcripcion (Placeholder) Y todo el panel del
-// microfono, dejando todo reseteado para la proxima vez.
-void ui_event_CancelButton4(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-
-    if (event_code == LV_EVENT_CLICKED) {
-        lv_obj_add_flag(ui_Placeholder, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_state(ui_RecordButton, LV_STATE_CHECKED);
         lv_obj_add_flag(ui_RecordButton, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(ui_MicPanel, LV_OBJ_FLAG_HIDDEN);
@@ -329,29 +323,28 @@ void ui_PIAMSYS_screen_init(void)
     lv_label_set_text(ui_Label34, "Placeholder...");
     lv_obj_set_style_text_font(ui_Label34, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_CancelButton4 = lv_button_create(ui_Placeholder);
-    lv_obj_set_width(ui_CancelButton4, 100);
-    lv_obj_set_height(ui_CancelButton4, 35);
-    lv_obj_set_x(ui_CancelButton4, 120);
-    lv_obj_set_y(ui_CancelButton4, 100);
-    lv_obj_set_align(ui_CancelButton4, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_CancelButton4, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_remove_flag(ui_CancelButton4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(ui_CancelButton4, lv_color_hex(0x9CC69C), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_CancelButton4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_color(ui_CancelButton4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_opa(ui_CancelButton4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label43 = lv_label_create(ui_CancelButton4);
-    lv_obj_set_width(ui_Label43, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label43, LV_SIZE_CONTENT);    /// 1
+    ui_Label43 = lv_label_create(ui_Placeholder);
+    lv_obj_set_width(ui_Label43, 100);
+    lv_obj_set_height(ui_Label43, 35);
+    lv_obj_set_x(ui_Label43, 121);
+    lv_obj_set_y(ui_Label43, 100);
     lv_obj_set_align(ui_Label43, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Label43, "Cancelar");
+    lv_obj_add_flag(ui_Label43, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_set_style_text_color(ui_Label43, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label43, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui_Label43, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui_Label43, 9, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_Label43, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label43, &ui_font_Font20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui_Label43, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Label43, lv_color_hex(0x9CC69C), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Label43, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_add_event_cb(ui_KEYButton, ui_event_KEYButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_WorYPhrButton, ui_event_WorYPhrButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_MicButton, ui_event_MicButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Label43, ui_event_Label43, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Placeholder, ui_event_Placeholder, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_MicPanel, ui_event_MicPanel, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_PIAMSYS, ui_event_PIAMSYS, LV_EVENT_ALL, NULL);
@@ -360,7 +353,6 @@ void ui_PIAMSYS_screen_init(void)
     lv_obj_add_event_cb(ui_RecordButton, ui_event_RecordButton, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_AceptButton5, ui_event_AceptButton5, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_CancelButton5, ui_event_CancelButton5, LV_EVENT_CLICKED, NULL);
-    lv_obj_add_event_cb(ui_CancelButton4, ui_event_CancelButton4, LV_EVENT_CLICKED, NULL);
 
 }
 
@@ -386,7 +378,6 @@ void ui_PIAMSYS_screen_destroy(void)
     ui_Image7 = NULL;
     ui_Placeholder = NULL;
     ui_Label34 = NULL;
-    ui_CancelButton4 = NULL;
     ui_Label43 = NULL;
 
 }

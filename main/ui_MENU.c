@@ -4,19 +4,26 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include "esp_pcf85063_port.h"
+#include "esp_axp2101_port.h"
+#include <stdio.h>
 
 lv_obj_t * ui_MENU = NULL;
 lv_obj_t * ui_CronosButton = NULL;
-lv_obj_t * ui_PaintButton = NULL;
+lv_obj_t * ui_Image12 = NULL;
 lv_obj_t * ui_CalcButton = NULL;
+lv_obj_t * ui_Image10 = NULL;
 lv_obj_t * ui_SOSButton = NULL;
+lv_obj_t * ui_Image9 = NULL;
 lv_obj_t * ui_SetButton = NULL;
+lv_obj_t * ui_Image13 = NULL;
 lv_obj_t * ui_PSButton = NULL;
+lv_obj_t * ui_Container2 = NULL;
+lv_obj_t * ui_Image11 = NULL;
 lv_obj_t * ui_OpenMenu = NULL;
 lv_obj_t * ui_Label3 = NULL;
 lv_obj_t * ui_Bar2 = NULL;
 lv_obj_t * ui_Label4 = NULL;
-lv_obj_t * ui_Container2 = NULL;
 lv_obj_t * ui_Label5 = NULL;
 // event funtions
 void ui_event_CronosButton(lv_event_t * e)
@@ -72,12 +79,37 @@ void ui_event_OpenMenu(lv_event_t * e)
         OpenSET_Animation(ui_SetButton, 0);
         OpenSOS_Animation(ui_SOSButton, 0);
         OpenCALC_Animation(ui_CalcButton, 0);
-        OpenPaint_Animation(ui_PaintButton, 0);
         OpenCRONOS_Animation(ui_CronosButton, 0);
         OpenPS_Animation(ui_PSButton, 0);
         CloseOM_Animation(ui_OpenMenu, 0);
+        OpenPS_Animation(ui_Container2, 0);
     }
 }
+
+// ======================= PIAM Pro: reloj del RTC =======================
+
+static lv_timer_t *s_menu_rtc_timer = NULL;
+
+static void menu_rtc_timer_cb(lv_timer_t *timer)
+{
+    int hour, minute;
+    piam_rtc_get_hour_minute(&hour, &minute);
+
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%02d : %02d", hour, minute);
+    lv_label_set_text(ui_Label5, buf);
+
+    // PIAM Pro: bateria real en Bar2/Label4
+    int battery_pct = piam_battery_get_percent();
+    if (battery_pct >= 0) {
+        lv_bar_set_value(ui_Bar2, battery_pct, LV_ANIM_OFF);
+        char pct_buf[16];
+        snprintf(pct_buf, sizeof(pct_buf), "%d", battery_pct);
+        lv_label_set_text(ui_Label4, pct_buf);
+    }
+}
+
+// =========================================================================
 
 // build funtions
 
@@ -102,19 +134,15 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_shadow_color(ui_CronosButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_opa(ui_CronosButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_PaintButton = lv_button_create(ui_MENU);
-    lv_obj_set_width(ui_PaintButton, 75);
-    lv_obj_set_height(ui_PaintButton, 75);
-    lv_obj_set_x(ui_PaintButton, 202);
-    lv_obj_set_y(ui_PaintButton, -123);
-    lv_obj_set_align(ui_PaintButton, LV_ALIGN_BOTTOM_LEFT);
-    lv_obj_add_flag(ui_PaintButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_remove_flag(ui_PaintButton, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_radius(ui_PaintButton, 90, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_PaintButton, lv_color_hex(0xDF40EC), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_PaintButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_color(ui_PaintButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_opa(ui_PaintButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_Image12 = lv_image_create(ui_CronosButton);
+    lv_image_set_src(ui_Image12, &ui_img_cronos_png);
+    lv_obj_set_width(ui_Image12, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image12, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Image12, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Image12, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_image_set_scale(ui_Image12, 150);
+    lv_obj_set_style_image_recolor(ui_Image12, lv_color_hex(0x1D9E5C), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(ui_Image12, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_CalcButton = lv_button_create(ui_MENU);
     lv_obj_set_width(ui_CalcButton, 75);
@@ -130,6 +158,15 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_shadow_color(ui_CalcButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_opa(ui_CalcButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Image10 = lv_image_create(ui_CalcButton);
+    lv_image_set_src(ui_Image10, &ui_img_calc_png);
+    lv_obj_set_width(ui_Image10, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image10, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Image10, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Image10, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_image_recolor(ui_Image10, lv_color_hex(0xFF4D51), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(ui_Image10, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     ui_SOSButton = lv_button_create(ui_MENU);
     lv_obj_set_width(ui_SOSButton, 75);
     lv_obj_set_height(ui_SOSButton, 75);
@@ -143,6 +180,16 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_bg_opa(ui_SOSButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_color(ui_SOSButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_opa(ui_SOSButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Image9 = lv_image_create(ui_SOSButton);
+    lv_image_set_src(ui_Image9, &ui_img_alarm_png);
+    lv_obj_set_width(ui_Image9, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image9, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Image9, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Image9, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_image_set_scale(ui_Image9, 150);
+    lv_obj_set_style_image_recolor(ui_Image9, lv_color_hex(0xBD62F1), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(ui_Image9, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SetButton = lv_button_create(ui_MENU);
     lv_obj_set_width(ui_SetButton, 75);
@@ -158,6 +205,15 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_shadow_color(ui_SetButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_opa(ui_SetButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Image13 = lv_image_create(ui_SetButton);
+    lv_image_set_src(ui_Image13, &ui_img_engranaje_png);
+    lv_obj_set_width(ui_Image13, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image13, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Image13, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Image13, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_image_recolor(ui_Image13, lv_color_hex(0x6776FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(ui_Image13, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     ui_PSButton = lv_button_create(ui_MENU);
     lv_obj_set_align(ui_PSButton, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_PSButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
@@ -167,6 +223,25 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_bg_opa(ui_PSButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_color(ui_PSButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_opa(ui_PSButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Container2 = lv_obj_create(ui_PSButton);
+    lv_obj_remove_style_all(ui_Container2);
+    lv_obj_set_width(ui_Container2, 10);
+    lv_obj_set_height(ui_Container2, 10);
+    lv_obj_set_align(ui_Container2, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Container2, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Image11 = lv_image_create(ui_Container2);
+    lv_image_set_src(ui_Image11, &ui_img_piam_sys_png);
+    lv_obj_set_width(ui_Image11, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image11, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Image11, -5);
+    lv_obj_set_y(ui_Image11, 0);
+    lv_obj_set_align(ui_Image11, LV_ALIGN_CENTER);
+    lv_obj_remove_flag(ui_Image11, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_image_set_scale(ui_Image11, 220);
+    lv_obj_set_style_image_recolor(ui_Image11, lv_color_hex(0x1E9286), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(ui_Image11, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_OpenMenu = lv_button_create(ui_MENU);
     lv_obj_set_width(ui_OpenMenu, 90);
@@ -215,25 +290,19 @@ void ui_MENU_screen_init(void)
     lv_obj_set_style_text_opa(ui_Label4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label4, &ui_font_DESIGNER25, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Container2 = lv_obj_create(ui_MENU);
-    lv_obj_remove_style_all(ui_Container2);
-    lv_obj_set_width(ui_Container2, 90);
-    lv_obj_set_height(ui_Container2, 40);
-    lv_obj_set_x(ui_Container2, 35);
-    lv_obj_set_y(ui_Container2, 25);
-    lv_obj_remove_flag(ui_Container2, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_radius(ui_Container2, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_Container2, lv_color_hex(0x69B480), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Container2, 50, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label5 = lv_label_create(ui_Container2);
-    lv_obj_set_width(ui_Label5, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label5, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Label5, LV_ALIGN_CENTER);
+    ui_Label5 = lv_label_create(ui_MENU);
+    lv_obj_set_width(ui_Label5, 80);
+    lv_obj_set_height(ui_Label5, 35);
+    lv_obj_set_x(ui_Label5, 35);
+    lv_obj_set_y(ui_Label5, 25);
     lv_label_set_text(ui_Label5, "00 : 00");
     lv_obj_set_style_text_color(ui_Label5, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_Label5, 200, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_Label5, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_Label5, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui_Label5, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Label5, lv_color_hex(0x183820), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Label5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_add_event_cb(ui_CronosButton, ui_event_CronosButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_CalcButton, ui_event_CalcButton, LV_EVENT_ALL, NULL);
@@ -242,25 +311,39 @@ void ui_MENU_screen_init(void)
     lv_obj_add_event_cb(ui_PSButton, ui_event_PSButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_OpenMenu, ui_event_OpenMenu, LV_EVENT_ALL, NULL);
 
+    // PIAM Pro: mostrar la hora real de una, y refrescar cada 1 segundo.
+    menu_rtc_timer_cb(NULL);
+    s_menu_rtc_timer = lv_timer_create(menu_rtc_timer_cb, 1000, NULL);
+
 }
 
 void ui_MENU_screen_destroy(void)
 {
+    // PIAM Pro: borrar el timer ANTES de borrar la pantalla
+    if (s_menu_rtc_timer) {
+        lv_timer_del(s_menu_rtc_timer);
+        s_menu_rtc_timer = NULL;
+    }
+
     if(ui_MENU) lv_obj_del(ui_MENU);
 
     // NULL screen variables
     ui_MENU = NULL;
     ui_CronosButton = NULL;
-    ui_PaintButton = NULL;
+    ui_Image12 = NULL;
     ui_CalcButton = NULL;
+    ui_Image10 = NULL;
     ui_SOSButton = NULL;
+    ui_Image9 = NULL;
     ui_SetButton = NULL;
+    ui_Image13 = NULL;
     ui_PSButton = NULL;
+    ui_Container2 = NULL;
+    ui_Image11 = NULL;
     ui_OpenMenu = NULL;
     ui_Label3 = NULL;
     ui_Bar2 = NULL;
     ui_Label4 = NULL;
-    ui_Container2 = NULL;
     ui_Label5 = NULL;
 
 }

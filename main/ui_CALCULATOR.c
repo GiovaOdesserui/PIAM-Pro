@@ -4,8 +4,14 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 lv_obj_t * ui_CALCULATOR = NULL;
+lv_obj_t * ui_Keyboard3 = NULL;
+lv_obj_t * ui_TextArea5 = NULL;
 // event funtions
 void ui_event_CALCULATOR(lv_event_t * e)
 {
@@ -17,6 +23,146 @@ void ui_event_CALCULATOR(lv_event_t * e)
     }
 }
 
+// PIAM Pro: mapa de teclado personalizado con layout de calculadora
+static const char *calc_map[] = {
+    "0", "1", "2", "3", "+", "-", "\n",
+    "4", "5", "6", "7", "x", "C", "\n",
+    "8", "9", ".", "^", "/", "=", ""
+};
+
+static const lv_buttonmatrix_ctrl_t calc_ctrl_map[] = {
+    1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1
+};
+
+// ======================= PIAM Pro: motor de la calculadora =======================
+//
+// Parser de expresiones simple, con precedencia matematica real:
+//   ^  (potencia, asocia de derecha a izquierda) -- mas fuerte
+//   x, /
+//   +, -                                          -- mas debil
+//
+// Gramatica (recursive descent):
+//   expr   := term (('+' | '-') term)*
+//   term   := power (('x' | '/') power)*
+//   power  := factor ('^' power)?      <- recursivo a la derecha
+//   factor := NUMBER
+//
+static const char *s_calc_p; // cursor de lectura sobre el string de la expresion
+
+static void calc_skip_spaces(void)
+{
+    while (*s_calc_p == ' ') s_calc_p++;
+}
+
+static double calc_parse_factor(void)
+{
+    calc_skip_spaces();
+    char *end;
+    double val = strtod(s_calc_p, &end);
+    s_calc_p = end;
+    return val;
+}
+
+static double calc_parse_power(void)
+{
+    double base = calc_parse_factor();
+    calc_skip_spaces();
+    if (*s_calc_p == '^') {
+        s_calc_p++;
+        double exp = calc_parse_power(); // recursivo: ^ asocia a la derecha
+        return pow(base, exp);
+    }
+    return base;
+}
+
+static double calc_parse_term(void)
+{
+    double val = calc_parse_power();
+    calc_skip_spaces();
+    while (*s_calc_p == 'x' || *s_calc_p == '/') {
+        char op = *s_calc_p++;
+        double rhs = calc_parse_power();
+        val = (op == 'x') ? (val * rhs) : (val / rhs);
+        calc_skip_spaces();
+    }
+    return val;
+}
+
+static double calc_parse_expr(void)
+{
+    double val = calc_parse_term();
+    calc_skip_spaces();
+    while (*s_calc_p == '+' || *s_calc_p == '-') {
+        char op = *s_calc_p++;
+        double rhs = calc_parse_term();
+        val = (op == '+') ? (val + rhs) : (val - rhs);
+        calc_skip_spaces();
+    }
+    return val;
+}
+
+// Evalua una expresion completa (string) y devuelve el resultado.
+static double calc_evaluate(const char *expr)
+{
+    s_calc_p = expr;
+    return calc_parse_expr();
+}
+
+// Formatea el resultado sin ceros/decimales innecesarios
+// (ej: 4.0 -> "4", 4.5 -> "4.5")
+static void calc_format_result(double val, char *out, size_t out_size)
+{
+    if (val == (long long)val) {
+        snprintf(out, out_size, "%lld", (long long)val);
+    } else {
+        snprintf(out, out_size, "%.6g", val);
+    }
+}
+
+// PIAM Pro: se dispara con cada click de tecla. El teclado ya insirtio
+// el texto de la tecla en TextArea5 solo (comportamiento por defecto de
+// LVGL) -- aca interceptamos las teclas especiales (C y =) para deshacer
+// esa insercion automatica y hacer lo que corresponde en su lugar.
+void ui_event_Keyboard3_calc(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_VALUE_CHANGED) {
+        uint32_t id = lv_buttonmatrix_get_selected_button(ui_Keyboard3);
+        const char *txt = lv_buttonmatrix_get_button_text(ui_Keyboard3, id);
+        if (txt == NULL) return;
+
+        if (strcmp(txt, "C") == 0) {
+            // El teclado ya inserto la "C" literal -- la sacamos, y
+            // borramos un caracter real mas (efecto backspace).
+            lv_textarea_delete_char(ui_TextArea5);
+            lv_textarea_delete_char(ui_TextArea5);
+        } else if (strcmp(txt, "=") == 0) {
+            // Sacamos el "=" que se inserto solo, evaluamos lo que
+            // quedo, y reemplazamos todo por el resultado.
+            lv_textarea_delete_char(ui_TextArea5);
+
+            const char *expr = lv_textarea_get_text(ui_TextArea5);
+            double result = calc_evaluate(expr);
+
+            char result_str[32];
+            calc_format_result(result, result_str, sizeof(result_str));
+            lv_textarea_set_text(ui_TextArea5, result_str);
+        }
+    } else if (event_code == LV_EVENT_LONG_PRESSED) {
+        uint32_t id = lv_buttonmatrix_get_selected_button(ui_Keyboard3);
+        const char *txt = lv_buttonmatrix_get_button_text(ui_Keyboard3, id);
+        if (txt != NULL && strcmp(txt, "C") == 0) {
+            // Mantenido sobre "C": borra todo
+            lv_textarea_set_text(ui_TextArea5, "");
+        }
+    }
+}
+
+// ===================================================================================
+
 // build funtions
 
 void ui_CALCULATOR_screen_init(void)
@@ -26,6 +172,49 @@ void ui_CALCULATOR_screen_init(void)
     lv_obj_set_style_bg_color(ui_CALCULATOR, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_CALCULATOR, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Keyboard3 = lv_keyboard_create(ui_CALCULATOR);
+    lv_keyboard_set_mode(ui_Keyboard3, LV_KEYBOARD_MODE_USER_1);
+    lv_obj_set_width(ui_Keyboard3, 408);
+    lv_obj_set_height(ui_Keyboard3, 182);
+    lv_obj_set_x(ui_Keyboard3, 0);
+    lv_obj_set_y(ui_Keyboard3, 43);
+    lv_obj_set_align(ui_Keyboard3, LV_ALIGN_CENTER);
+    lv_obj_set_style_radius(ui_Keyboard3, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Keyboard3, lv_color_hex(0xFFABA3), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Keyboard3, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_obj_set_style_bg_color(ui_Keyboard3, lv_color_hex(0xEB7878), LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Keyboard3, 255, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Keyboard3, lv_color_hex(0xFFFFFF), LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Keyboard3, 255, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Keyboard3, &lv_font_montserrat_14, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Keyboard3, lv_color_hex(0xC98A89), LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_opa(ui_Keyboard3, 255, LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(ui_Keyboard3, lv_color_hex(0xFFFFFF), LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_text_opa(ui_Keyboard3, 255, LV_PART_ITEMS | LV_STATE_CHECKED);
+
+    ui_TextArea5 = lv_textarea_create(ui_CALCULATOR);
+    lv_obj_set_width(ui_TextArea5, 408);
+    lv_obj_set_height(ui_TextArea5, 79);
+    lv_obj_set_x(ui_TextArea5, 0);
+    lv_obj_set_y(ui_TextArea5, -100);
+    lv_obj_set_align(ui_TextArea5, LV_ALIGN_CENTER);
+    lv_textarea_set_placeholder_text(ui_TextArea5, "Calculadora...");
+    lv_obj_set_style_text_color(ui_TextArea5, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_TextArea5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_TextArea5, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_TextArea5, lv_color_hex(0xB56A65), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_TextArea5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_TextArea5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_TextArea5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_obj_set_style_text_color(ui_TextArea5, lv_color_hex(0xFFFFFF), LV_PART_SELECTED | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_TextArea5, 255, LV_PART_SELECTED | LV_STATE_DEFAULT);
+
+    lv_keyboard_set_textarea(ui_Keyboard3, ui_TextArea5);
+    lv_keyboard_set_map(ui_Keyboard3, LV_KEYBOARD_MODE_USER_1, calc_map, calc_ctrl_map);
+    lv_obj_add_event_cb(ui_Keyboard3, ui_event_Keyboard3_calc, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(ui_Keyboard3, ui_event_Keyboard3_calc, LV_EVENT_LONG_PRESSED, NULL);
     lv_obj_add_event_cb(ui_CALCULATOR, ui_event_CALCULATOR, LV_EVENT_ALL, NULL);
 
 }
@@ -36,5 +225,7 @@ void ui_CALCULATOR_screen_destroy(void)
 
     // NULL screen variables
     ui_CALCULATOR = NULL;
+    ui_Keyboard3 = NULL;
+    ui_TextArea5 = NULL;
 
 }

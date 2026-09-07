@@ -98,6 +98,13 @@ extern "C" void app_main(void)
     tts_audio_init();  // PIAM Pro: WiFi + cache de audio (necesita el codec ya creado)
     esp_qmi8658_port_init(i2c_bus_handle);
     esp_pcf85063_port_init(i2c_bus_handle);
+
+    // ============================================================
+    // PIAM Pro: AJUSTE UNICO de fecha/hora -- BORRAR ESTE BLOQUE
+    // despues de flashear una vez, para que la bateria mantenga el
+    // paso del tiempo real (si lo dejas, resetea la hora a esto
+    // mismo en cada reinicio).
+    // ============================================================
     esp_sdcard_port_init();
     esp_camera_port_init(I2C_PORT_NUM);
     // esp_wifi_port_init("WSTEST", "waveshare0755");  // PIAM Pro: sacado,

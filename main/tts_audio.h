@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,27 @@ bool stt_stop_and_transcribe(void);
 // Devuelve el ultimo texto transcripto (valido despues de un
 // stt_stop_and_transcribe() exitoso). NO liberar el puntero.
 const char *stt_get_last_transcript(void);
+
+// --------------------------------------------------------------
+// WiFi: escaneo, conexion y guardado persistente (NVS)
+// --------------------------------------------------------------
+
+#define WIFI_SCAN_MAX_NETWORKS 12
+
+typedef struct {
+    char ssid[33];
+    int8_t rssi; // señal, mas alto (menos negativo) = mejor
+} wifi_scan_result_t;
+
+// Escanea redes cercanas (bloquea unos segundos). Llena 'out' con
+// hasta WIFI_SCAN_MAX_NETWORKS resultados, ordenados de mejor a
+// peor señal, sin duplicados. Devuelve la cantidad real encontrada.
+int wifi_scan_networks(wifi_scan_result_t *out, int max_results);
+
+// Se conecta a una red nueva (desconecta la actual si hay una), y si
+// funciona, la guarda en NVS para que se use sola en el proximo
+// arranque. Devuelve true si logro conectar dentro del timeout.
+bool wifi_connect_and_save(const char *ssid, const char *password);
 
 #ifdef __cplusplus
 }

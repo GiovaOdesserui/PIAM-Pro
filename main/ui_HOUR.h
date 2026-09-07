@@ -13,11 +13,14 @@ extern "C" {
 // SCREEN: ui_HOUR
 extern void ui_HOUR_screen_init(void);
 extern void ui_HOUR_screen_destroy(void);
+extern void ui_event_HOUR(lv_event_t * e);
 extern lv_obj_t * ui_HOUR;
 extern void ui_event_Container1(lv_event_t * e);
 extern lv_obj_t * ui_Container1;
 extern lv_obj_t * ui_Label1;
 extern lv_obj_t * ui_Label2;
+extern lv_obj_t * ui_Bar4;
+extern lv_obj_t * ui_Label45;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

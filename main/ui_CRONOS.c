@@ -4,8 +4,17 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include <stdio.h>
 
 lv_obj_t * ui_CRONOS = NULL;
+lv_obj_t * ui_Label13 = NULL;
+lv_obj_t * ui_MicroSecLabel = NULL;
+lv_obj_t * ui_SecondLabel = NULL;
+lv_obj_t * ui_MinuteLabel = NULL;
+lv_obj_t * ui_DobleDot = NULL;
+lv_obj_t * ui_Button15 = NULL;
+lv_obj_t * ui_Button16 = NULL;
+lv_obj_t * ui_Label21 = NULL;
 // event funtions
 void ui_event_CRONOS(lv_event_t * e)
 {
@@ -17,6 +26,71 @@ void ui_event_CRONOS(lv_event_t * e)
     }
 }
 
+// ======================= PIAM Pro: motor del cronometro =======================
+//
+// Basado en tiempo real transcurrido (lv_tick), no en un contador manual
+// que se podria desincronizar. "Iniciar" = Button16, "Parar" = Button15.
+//
+static bool s_cronos_running = false;
+static uint32_t s_cronos_start_tick = 0;   // tick de LVGL cuando arranco/reanudo
+static uint32_t s_cronos_elapsed_ms = 0;   // tiempo acumulado antes de la corrida actual
+static lv_timer_t *s_cronos_timer = NULL;
+
+static void cronos_update_display(uint32_t total_ms)
+{
+    uint32_t minutes = total_ms / 60000;
+    uint32_t seconds = (total_ms / 1000) % 60;
+    uint32_t centis  = (total_ms / 10) % 100;
+
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%02lu", (unsigned long)minutes);
+    lv_label_set_text(ui_MinuteLabel, buf);
+    snprintf(buf, sizeof(buf), "%02lu", (unsigned long)seconds);
+    lv_label_set_text(ui_SecondLabel, buf);
+    snprintf(buf, sizeof(buf), "%02lu", (unsigned long)centis);
+    lv_label_set_text(ui_MicroSecLabel, buf);
+}
+
+static void cronos_timer_cb(lv_timer_t *timer)
+{
+    uint32_t total_ms = s_cronos_elapsed_ms;
+    if (s_cronos_running) {
+        total_ms += lv_tick_elaps(s_cronos_start_tick);
+    }
+    cronos_update_display(total_ms);
+}
+
+// "Iniciar" (Button16): arranca o reanuda desde donde qued\u00f3.
+void ui_event_Button16_cronos(lv_event_t * e)
+{
+    if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        if (!s_cronos_running) {
+            s_cronos_start_tick = lv_tick_get();
+            s_cronos_running = true;
+        }
+    }
+}
+
+// "Parar" (Button15): click = pausa (congela el tiempo).
+//                      mantenido = reinicia a 00:00:00.
+void ui_event_Button15_cronos(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_CLICKED) {
+        if (s_cronos_running) {
+            s_cronos_elapsed_ms += lv_tick_elaps(s_cronos_start_tick);
+            s_cronos_running = false;
+        }
+    } else if (event_code == LV_EVENT_LONG_PRESSED) {
+        s_cronos_running = false;
+        s_cronos_elapsed_ms = 0;
+        cronos_update_display(0);
+    }
+}
+
+// ================================================================================
+
 // build funtions
 
 void ui_CRONOS_screen_init(void)
@@ -26,15 +100,132 @@ void ui_CRONOS_screen_init(void)
     lv_obj_set_style_bg_color(ui_CRONOS, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_CRONOS, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Label13 = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label13, -100);
+    lv_obj_set_y(ui_Label13, -120);
+    lv_obj_set_align(ui_Label13, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label13, "Cronometro");
+    lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0x72E8E8), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label13, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label13, &ui_font_Font50, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_MicroSecLabel = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_MicroSecLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_MicroSecLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_MicroSecLabel, 100);
+    lv_obj_set_y(ui_MicroSecLabel, -25);
+    lv_obj_set_align(ui_MicroSecLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_MicroSecLabel, "00");
+    lv_obj_set_style_text_color(ui_MicroSecLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_MicroSecLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_MicroSecLabel, &ui_font_Font100, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_SecondLabel = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_SecondLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_SecondLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_SecondLabel, 0);
+    lv_obj_set_y(ui_SecondLabel, -25);
+    lv_obj_set_align(ui_SecondLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_SecondLabel, "00");
+    lv_obj_set_style_text_color(ui_SecondLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_SecondLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_SecondLabel, &ui_font_Font100, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_MinuteLabel = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_MinuteLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_MinuteLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_MinuteLabel, -100);
+    lv_obj_set_y(ui_MinuteLabel, -25);
+    lv_obj_set_align(ui_MinuteLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_MinuteLabel, "00");
+    lv_obj_set_style_text_color(ui_MinuteLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_MinuteLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_MinuteLabel, &ui_font_Font100, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DobleDot = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_DobleDot, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DobleDot, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DobleDot, 0);
+    lv_obj_set_y(ui_DobleDot, -30);
+    lv_obj_set_align(ui_DobleDot, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DobleDot, ":     :");
+    lv_obj_set_style_text_color(ui_DobleDot, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DobleDot, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DobleDot, &ui_font_Font100, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Button15 = lv_button_create(ui_CRONOS);
+    lv_obj_set_width(ui_Button15, 125);
+    lv_obj_set_height(ui_Button15, 75);
+    lv_obj_set_x(ui_Button15, 100);
+    lv_obj_set_y(ui_Button15, 85);
+    lv_obj_set_align(ui_Button15, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Button15, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Button15, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Button15, lv_color_hex(0x4E989A), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Button15, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Button15, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Button15, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Button16 = lv_button_create(ui_CRONOS);
+    lv_obj_set_width(ui_Button16, 125);
+    lv_obj_set_height(ui_Button16, 65);
+    lv_obj_set_x(ui_Button16, -100);
+    lv_obj_set_y(ui_Button16, 85);
+    lv_obj_set_align(ui_Button16, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Button16, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Button16, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Button16, lv_color_hex(0x7FE6EA), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Button16, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Button16, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Button16, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Label21 = lv_label_create(ui_CRONOS);
+    lv_obj_set_width(ui_Label21, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label21, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label21, 0);
+    lv_obj_set_y(ui_Label21, 84);
+    lv_obj_set_align(ui_Label21, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label21, "iniciar                              Parar");
+    lv_obj_set_style_text_color(ui_Label21, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label21, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label21, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_CRONOS, ui_event_CRONOS, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button16, ui_event_Button16_cronos, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(ui_Button15, ui_event_Button15_cronos, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(ui_Button15, ui_event_Button15_cronos, LV_EVENT_LONG_PRESSED, NULL);
+
+    // PIAM Pro: timer que refresca los labels cada 30ms. Se borra en
+    // screen_destroy para no crashear actualizando labels ya eliminados
+    // al salir de esta pantalla.
+    s_cronos_running = false;
+    s_cronos_elapsed_ms = 0;
+    s_cronos_timer = lv_timer_create(cronos_timer_cb, 30, NULL);
 
 }
 
 void ui_CRONOS_screen_destroy(void)
 {
+    // PIAM Pro: borrar el timer ANTES de borrar la pantalla, para que
+    // no siga intentando actualizar labels que ya no existen.
+    if (s_cronos_timer) {
+        lv_timer_del(s_cronos_timer);
+        s_cronos_timer = NULL;
+    }
+
     if(ui_CRONOS) lv_obj_del(ui_CRONOS);
 
     // NULL screen variables
     ui_CRONOS = NULL;
+    ui_Label13 = NULL;
+    ui_MicroSecLabel = NULL;
+    ui_SecondLabel = NULL;
+    ui_MinuteLabel = NULL;
+    ui_DobleDot = NULL;
+    ui_Button15 = NULL;
+    ui_Button16 = NULL;
+    ui_Label21 = NULL;
 
 }

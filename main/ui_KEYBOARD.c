@@ -22,16 +22,15 @@ void ui_event_KEYBOARD(lv_event_t * e)
 
 // build funtions
 
-// PIAM Pro: se dispara cuando el usuario aprieta la tecla "Enter" del
-// teclado (evento LV_EVENT_READY, propio del widget Keyboard de LVGL).
-// Toma el texto escrito en ui_TextArea2 y lo reproduce por voz.
+// PIAM Pro: se dispara al apretar "Enter" en el teclado. Reproduce el
+// texto escrito por voz y limpia el cuadro de texto.
 void ui_event_Keyboard1_ready(lv_event_t * e)
 {
     const char *text = lv_textarea_get_text(ui_TextArea2);
     if (text != NULL && text[0] != '\0') {
         tts_speak(text);
     }
-    lv_textarea_set_text(ui_TextArea2, "");  // limpiar despues de hablar
+    lv_textarea_set_text(ui_TextArea2, "");
 }
 
 void ui_KEYBOARD_screen_init(void)
@@ -60,10 +59,7 @@ void ui_KEYBOARD_screen_init(void)
     lv_obj_set_style_text_color(ui_Keyboard1, lv_color_hex(0xF6F6F6), LV_PART_ITEMS | LV_STATE_CHECKED);
     lv_obj_set_style_text_opa(ui_Keyboard1, 255, LV_PART_ITEMS | LV_STATE_CHECKED);
 
-    // PIAM Pro: el teclado no tenia fuente propia definida, asi que usaba
-    // el tamano por defecto del tema (demasiado grande para un teclado tan
-    // compacto). Se achica a montserrat_10 y se agrega separacion entre
-    // teclas para que no se vean pegadas.
+    // PIAM Pro: texto mas chico y separacion entre teclas
     lv_obj_set_style_text_font(ui_Keyboard1, &lv_font_montserrat_10, LV_PART_ITEMS | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_row(ui_Keyboard1, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_column(ui_Keyboard1, 4, LV_PART_MAIN | LV_STATE_DEFAULT);

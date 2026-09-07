@@ -48,6 +48,7 @@ extern lv_anim_t * OpenPaint_Animation(lv_obj_t * TargetObject, int delay);
 extern lv_anim_t * OpenCRONOS_Animation(lv_obj_t * TargetObject, int delay);
 extern lv_anim_t * OpenPS_Animation(lv_obj_t * TargetObject, int delay);
 extern lv_anim_t * CloseOM_Animation(lv_obj_t * TargetObject, int delay);
+extern lv_anim_t * Blink_Animation(lv_obj_t * TargetObject, int delay);
 
 // EVENTS
 
@@ -55,21 +56,27 @@ extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
 LV_IMG_DECLARE(ui_img_piam_home_png);    // assets/PIAM_HOME.png
+LV_IMG_DECLARE(ui_img_weather_png);    // assets/WEATHER.png
 LV_IMG_DECLARE(ui_img_keyboard_png);    // assets/Keyboard.png
 LV_IMG_DECLARE(ui_img_talk_png);    // assets/Talk.png
 LV_IMG_DECLARE(ui_img_sing_png);    // assets/Sing.png
 LV_IMG_DECLARE(ui_img_singer_png);    // assets/Singer.png
 LV_IMG_DECLARE(ui_img_add_png);    // assets/ADD.png
 LV_IMG_DECLARE(ui_img_editar_png);    // assets/Editar.png
+LV_IMG_DECLARE(ui_img_cronos_png);    // assets/Cronos.png
+LV_IMG_DECLARE(ui_img_calc_png);    // assets/Calc.png
+LV_IMG_DECLARE(ui_img_alarm_png);    // assets/Alarm.png
+LV_IMG_DECLARE(ui_img_engranaje_png);    // assets/Engranaje.png
+LV_IMG_DECLARE(ui_img_piam_sys_png);    // assets/PIAM_SYS.png
 
 // FONTS
 LV_FONT_DECLARE(ui_font_DESIGNER100);
 LV_FONT_DECLARE(ui_font_DESIGNER25);
 LV_FONT_DECLARE(ui_font_DESIGNER36);
 LV_FONT_DECLARE(ui_font_Font100);
+LV_FONT_DECLARE(ui_font_Font20);
 LV_FONT_DECLARE(ui_font_Font28);
 LV_FONT_DECLARE(ui_font_Font50);
-LV_FONT_DECLARE(ui_font_Font20);
 
 // UI INIT
 void ui_init(void);

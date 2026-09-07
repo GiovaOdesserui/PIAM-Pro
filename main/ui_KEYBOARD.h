@@ -18,7 +18,6 @@ extern lv_obj_t * ui_KEYBOARD;
 extern lv_obj_t * ui_Keyboard1;
 extern lv_obj_t * ui_TextArea2;
 // CUSTOM VARIABLES
-extern void ui_event_Keyboard1_ready(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

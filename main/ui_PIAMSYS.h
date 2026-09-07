@@ -36,13 +36,9 @@ extern lv_obj_t * ui_Image7;
 extern void ui_event_Placeholder(lv_event_t * e);
 extern lv_obj_t * ui_Placeholder;
 extern lv_obj_t * ui_Label34;
-extern lv_obj_t * ui_CancelButton4;
+extern void ui_event_Label43(lv_event_t * e);
 extern lv_obj_t * ui_Label43;
 // CUSTOM VARIABLES
-extern void ui_event_RecordButton(lv_event_t * e);
-extern void ui_event_AceptButton5(lv_event_t * e);
-extern void ui_event_CancelButton5(lv_event_t * e);
-extern void ui_event_CancelButton4(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

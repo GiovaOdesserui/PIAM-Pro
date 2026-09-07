@@ -4,18 +4,154 @@
 // Project name: PIAM_Pro
 
 #include "ui.h"
+#include "tts_audio.h"
+#include <string.h>
+#include <stdio.h>
 
 lv_obj_t * ui_SETTINGS = NULL;
+lv_obj_t * ui_OptionsPanel = NULL;
+lv_obj_t * ui_Button5 = NULL;
+lv_obj_t * ui_Label44 = NULL;
+lv_obj_t * ui_Label46 = NULL;
+lv_obj_t * ui_WIFIPanel = NULL;
+lv_obj_t * ui_Label24 = NULL;
+lv_obj_t * ui_WebsPanel = NULL;
+lv_obj_t * ui_Button1 = NULL;
+lv_obj_t * ui_Label23 = NULL;
+lv_obj_t * ui_Button2 = NULL;
+lv_obj_t * ui_Label26 = NULL;
+lv_obj_t * ui_PassPanel = NULL;
+lv_obj_t * ui_Label27 = NULL;
+lv_obj_t * ui_Keyboard2 = NULL;
+lv_obj_t * ui_TextArea4 = NULL;
+static void populate_network_list(void); // PIAM Pro: declarada mas abajo
 // event funtions
 void ui_event_SETTINGS(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
 
-    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_active()) == LV_DIR_TOP) {
+    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_active()) == LV_DIR_RIGHT) {
         lv_indev_wait_release(lv_indev_active());
         _ui_screen_change(&ui_MENU, LV_SCR_LOAD_ANIM_FADE_ON, 100, 0, &ui_MENU_screen_init);
     }
 }
+
+void ui_event_Button5(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_flag_modify(ui_WIFIPanel, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_REMOVE);
+        lv_obj_remove_flag(ui_WebsPanel, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_PassPanel, LV_OBJ_FLAG_HIDDEN);
+        populate_network_list(); // PIAM Pro: escanea y llena la lista
+    }
+}
+
+void ui_event_WIFIPanel(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_active()) == LV_DIR_RIGHT) {
+        lv_indev_wait_release(lv_indev_active());
+        _ui_flag_modify(ui_WIFIPanel, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
+    }
+}
+
+// ======================= PIAM Pro: motor de configuracion WiFi =======================
+
+static wifi_scan_result_t s_scan_results[WIFI_SCAN_MAX_NETWORKS];
+static char s_selected_ssid[33] = {0};
+
+// Crea (o re-crea) la lista de redes encontradas dentro de WebsPanel,
+// clonando el estilo visual del boton de ejemplo que ya armaste
+// (Button1 + Label23 + Button2 "Conectar").
+static void ui_event_NetworkConnect(lv_event_t * e);
+
+static void populate_network_list(void)
+{
+    lv_obj_clean(ui_WebsPanel); // borra los botones de la vez anterior
+
+    int count = wifi_scan_networks(s_scan_results, WIFI_SCAN_MAX_NETWORKS);
+
+    if (count == 0) {
+        lv_obj_t *empty_label = lv_label_create(ui_WebsPanel);
+        lv_label_set_text(empty_label, "No se encontraron redes");
+        lv_obj_set_style_text_color(empty_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        return;
+    }
+
+    for (int i = 0; i < count; i++) {
+        lv_obj_t *row = lv_button_create(ui_WebsPanel);
+        lv_obj_set_width(row, 300);
+        lv_obj_set_height(row, 50);
+        lv_obj_set_style_bg_color(row, lv_color_hex(0x2B515E), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(row, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_add_flag(row, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+        lv_obj_remove_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+
+        lv_obj_t *name_label = lv_label_create(row);
+        lv_obj_set_x(name_label, -100);
+        lv_obj_set_align(name_label, LV_ALIGN_CENTER);
+        lv_label_set_text(name_label, s_scan_results[i].ssid);
+        lv_obj_set_style_text_color(name_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(name_label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        lv_obj_t *connect_btn = lv_button_create(row);
+        lv_obj_set_width(connect_btn, 100);
+        lv_obj_set_height(connect_btn, 30);
+        lv_obj_set_x(connect_btn, 70);
+        lv_obj_set_align(connect_btn, LV_ALIGN_CENTER);
+        lv_obj_set_style_bg_color(connect_btn, lv_color_hex(0x6A9FAD), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(connect_btn, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        lv_obj_t *connect_label = lv_label_create(connect_btn);
+        lv_obj_set_align(connect_label, LV_ALIGN_CENTER);
+        lv_label_set_text(connect_label, "Conectar");
+        lv_obj_set_style_text_color(connect_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(connect_label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        // Guardamos el indice de esta red en el propio boton, para
+        // saber cual eligieron cuando disparen el evento.
+        lv_obj_set_user_data(connect_btn, (void *)(intptr_t)i);
+        lv_obj_add_event_cb(connect_btn, ui_event_NetworkConnect, LV_EVENT_CLICKED, NULL);
+    }
+}
+
+// Se dispara al elegir "Conectar" en alguna red de la lista.
+static void ui_event_NetworkConnect(lv_event_t * e)
+{
+    lv_obj_t *btn = lv_event_get_target(e);
+    int idx = (int)(intptr_t)lv_obj_get_user_data(btn);
+
+    strncpy(s_selected_ssid, s_scan_results[idx].ssid, sizeof(s_selected_ssid) - 1);
+
+    lv_label_set_text(ui_Label27, "contraseña:"); // por si quedo un "Error" de un intento anterior
+    lv_obj_add_flag(ui_WebsPanel, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(ui_PassPanel, LV_OBJ_FLAG_HIDDEN);
+    lv_textarea_set_text(ui_TextArea4, "");
+}
+
+// Se dispara al apretar "Enter" en el teclado de la contraseña.
+void ui_event_Keyboard2_ready(lv_event_t * e)
+{
+    const char *password = lv_textarea_get_text(ui_TextArea4);
+
+    bool ok = wifi_connect_and_save(s_selected_ssid, password);
+
+    if (ok) {
+        // Volvemos a la pantalla normal de Ajustes
+        lv_obj_add_flag(ui_PassPanel, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_WIFIPanel, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        // Contraseña incorrecta o fuera de rango -- nos quedamos en
+        // el mismo panel, mostrando el error, para reintentar.
+        lv_label_set_text(ui_Label27, "Error, reintente:");
+        lv_textarea_set_text(ui_TextArea4, "");
+    }
+}
+
+// =======================================================================================
 
 // build funtions
 
@@ -26,6 +162,183 @@ void ui_SETTINGS_screen_init(void)
     lv_obj_set_style_bg_color(ui_SETTINGS, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_SETTINGS, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_OptionsPanel = lv_obj_create(ui_SETTINGS);
+    lv_obj_set_width(ui_OptionsPanel, 425);
+    lv_obj_set_height(ui_OptionsPanel, 225);
+    lv_obj_set_x(ui_OptionsPanel, 0);
+    lv_obj_set_y(ui_OptionsPanel, 20);
+    lv_obj_set_align(ui_OptionsPanel, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_OptionsPanel, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(ui_OptionsPanel, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_scroll_dir(ui_OptionsPanel, LV_DIR_VER);
+    lv_obj_set_style_bg_color(ui_OptionsPanel, lv_color_hex(0x131322), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_OptionsPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_OptionsPanel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_OptionsPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Button5 = lv_button_create(ui_OptionsPanel);
+    lv_obj_set_width(ui_Button5, 300);
+    lv_obj_set_height(ui_Button5, 50);
+    lv_obj_set_align(ui_Button5, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Button5, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Button5, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Button5, lv_color_hex(0x29285A), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Button5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_Button5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_Button5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Button5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Button5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Label44 = lv_label_create(ui_Button5);
+    lv_obj_set_width(ui_Label44, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label44, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label44, -55);
+    lv_obj_set_y(ui_Label44, 0);
+    lv_obj_set_align(ui_Label44, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label44, "Conexion Red WIFI");
+    lv_obj_set_style_text_color(ui_Label44, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label44, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label44, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Label46 = lv_label_create(ui_SETTINGS);
+    lv_obj_set_width(ui_Label46, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label46, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label46, -125);
+    lv_obj_set_y(ui_Label46, -125);
+    lv_obj_set_align(ui_Label46, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label46, "Ajustes");
+    lv_obj_set_style_text_color(ui_Label46, lv_color_hex(0x727CE8), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label46, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label46, &ui_font_Font50, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WIFIPanel = lv_obj_create(ui_SETTINGS);
+    lv_obj_set_width(ui_WIFIPanel, 480);
+    lv_obj_set_height(ui_WIFIPanel, 320);
+    lv_obj_set_align(ui_WIFIPanel, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_WIFIPanel, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_remove_flag(ui_WIFIPanel, LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_WIFIPanel, lv_color_hex(0x010101), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_WIFIPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_WIFIPanel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_WIFIPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Label24 = lv_label_create(ui_WIFIPanel);
+    lv_obj_set_width(ui_Label24, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label24, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label24, -100);
+    lv_obj_set_y(ui_Label24, -125);
+    lv_obj_set_align(ui_Label24, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label24, "Red WIFI");
+    lv_obj_set_style_text_color(ui_Label24, lv_color_hex(0x49EAFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label24, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label24, &ui_font_Font50, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WebsPanel = lv_obj_create(ui_WIFIPanel);
+    lv_obj_set_width(ui_WebsPanel, 400);
+    lv_obj_set_height(ui_WebsPanel, 225);
+    lv_obj_set_x(ui_WebsPanel, 0);
+    lv_obj_set_y(ui_WebsPanel, 20);
+    lv_obj_set_align(ui_WebsPanel, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_WebsPanel, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(ui_WebsPanel, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_scroll_dir(ui_WebsPanel, LV_DIR_VER);
+    lv_obj_set_style_bg_color(ui_WebsPanel, lv_color_hex(0x131D22), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_WebsPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_WebsPanel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_WebsPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Button1 = lv_button_create(ui_WebsPanel);
+    lv_obj_set_width(ui_Button1, 300);
+    lv_obj_set_height(ui_Button1, 50);
+    lv_obj_set_align(ui_Button1, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Button1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Button1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Button1, lv_color_hex(0x2B515E), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Button1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_Button1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_Button1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Button1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Button1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Label23 = lv_label_create(ui_Button1);
+    lv_obj_set_width(ui_Label23, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label23, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label23, -100);
+    lv_obj_set_y(ui_Label23, 0);
+    lv_obj_set_align(ui_Label23, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label23, "Wifi 123");
+    lv_obj_set_style_text_color(ui_Label23, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label23, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label23, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Button2 = lv_button_create(ui_Button1);
+    lv_obj_set_width(ui_Button2, 100);
+    lv_obj_set_height(ui_Button2, 30);
+    lv_obj_set_x(ui_Button2, 70);
+    lv_obj_set_y(ui_Button2, 0);
+    lv_obj_set_align(ui_Button2, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Button2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_remove_flag(ui_Button2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Button2, lv_color_hex(0x6A9FAD), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Button2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_Button2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_Button2, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_Button2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_Button2, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Button2, lv_color_hex(0x0D8AFF), LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_opa(ui_Button2, 255, LV_PART_MAIN | LV_STATE_CHECKED);
+
+    ui_Label26 = lv_label_create(ui_Button2);
+    lv_obj_set_width(ui_Label26, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label26, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Label26, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label26, "Conectar");
+    lv_obj_set_style_text_color(ui_Label26, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label26, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label26, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_PassPanel = lv_obj_create(ui_WIFIPanel);
+    lv_obj_set_width(ui_PassPanel, 400);
+    lv_obj_set_height(ui_PassPanel, 290);
+    lv_obj_set_align(ui_PassPanel, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_PassPanel, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_remove_flag(ui_PassPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Label27 = lv_label_create(ui_PassPanel);
+    lv_obj_set_width(ui_Label27, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Label27, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Label27, -124);
+    lv_obj_set_y(ui_Label27, -116);
+    lv_obj_set_align(ui_Label27, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Label27, "contraseña:");
+    lv_obj_set_style_text_color(ui_Label27, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_Label27, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Label27, &ui_font_Font28, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Keyboard2 = lv_keyboard_create(ui_PassPanel);
+    lv_obj_set_width(ui_Keyboard2, 370);
+    lv_obj_set_height(ui_Keyboard2, 135);
+    lv_obj_set_x(ui_Keyboard2, 0);
+    lv_obj_set_y(ui_Keyboard2, 65);
+    lv_obj_set_align(ui_Keyboard2, LV_ALIGN_CENTER);
+    // PIAM Pro: fuente chica y separacion entre teclas
+    lv_obj_set_style_text_font(ui_Keyboard2, &lv_font_montserrat_10, LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Keyboard2, lv_color_hex(0x000000), LV_PART_ITEMS | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_row(ui_Keyboard2, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_column(ui_Keyboard2, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_TextArea4 = lv_textarea_create(ui_PassPanel);
+    lv_obj_set_width(ui_TextArea4, 370);
+    lv_obj_set_height(ui_TextArea4, 70);
+    lv_obj_set_x(ui_TextArea4, 0);
+    lv_obj_set_y(ui_TextArea4, -56);
+    lv_obj_set_align(ui_TextArea4, LV_ALIGN_CENTER);
+    lv_textarea_set_placeholder_text(ui_TextArea4, "Placeholder...");
+
+    lv_obj_add_event_cb(ui_Button5, ui_event_Button5, LV_EVENT_ALL, NULL);
+    lv_keyboard_set_textarea(ui_Keyboard2, ui_TextArea4);
+    lv_obj_add_event_cb(ui_Keyboard2, ui_event_Keyboard2_ready, LV_EVENT_READY, NULL);
+    lv_obj_add_event_cb(ui_WIFIPanel, ui_event_WIFIPanel, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SETTINGS, ui_event_SETTINGS, LV_EVENT_ALL, NULL);
 
 }
@@ -36,5 +349,20 @@ void ui_SETTINGS_screen_destroy(void)
 
     // NULL screen variables
     ui_SETTINGS = NULL;
+    ui_OptionsPanel = NULL;
+    ui_Button5 = NULL;
+    ui_Label44 = NULL;
+    ui_Label46 = NULL;
+    ui_WIFIPanel = NULL;
+    ui_Label24 = NULL;
+    ui_WebsPanel = NULL;
+    ui_Button1 = NULL;
+    ui_Label23 = NULL;
+    ui_Button2 = NULL;
+    ui_Label26 = NULL;
+    ui_PassPanel = NULL;
+    ui_Label27 = NULL;
+    ui_Keyboard2 = NULL;
+    ui_TextArea4 = NULL;
 
 }

@@ -25,9 +25,14 @@ idf_component_register(SRCS
         "ui_img_keyboard_png.c"
         "ui_img_talk_png.c"
         "ui_img_sing_png.c"
+        "ui_img_singer_png.c"
         "ui_img_add_png.c"
         "ui_img_editar_png.c"
-        "ui_img_singer_png.c"
+        "ui_img_cronos_png.c"
+        "ui_img_calc_png.c"
+        "ui_img_alarm_png.c"
+        "ui_img_engranaje_png.c"
+        "ui_img_piam_sys_png.c"
     INCLUDE_DIRS ".")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-error=enum-compare)
