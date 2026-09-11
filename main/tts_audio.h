@@ -37,7 +37,15 @@ bool stt_stop_and_transcribe(void);
 
 // Devuelve el ultimo texto transcripto (valido despues de un
 // stt_stop_and_transcribe() exitoso). NO liberar el puntero.
+// PIAM Pro: WiFi + cache de audio (necesita el codec ya creado)
 const char *stt_get_last_transcript(void);
+
+// PIAM Pro: true mientras una conexion WiFi esta activamente
+// estableciendose. Otras partes del codigo que tocan I2C/SensorLib
+// (como el chequeo de alarmas) deberian SALTAR su ciclo mientras esto
+// es true, para evitar una condicion de carrera en el sistema interno
+// de pthread de ESP-IDF que crashea si dos tareas lo tocan a la vez.
+bool wifi_is_connecting(void);
 
 // --------------------------------------------------------------
 // WiFi: escaneo, conexion y guardado persistente (NVS)

@@ -53,10 +53,10 @@ static void hour_rtc_timer_cb(lv_timer_t *timer)
     snprintf(date_buf, sizeof(date_buf), "%02d/%02d", day, month);
     lv_label_set_text(ui_Label45, date_buf);
 
-    int battery_pct = piam_battery_get_percent();
-    if (battery_pct >= 0) {
-        lv_bar_set_value(ui_Bar4, battery_pct, LV_ANIM_OFF);
-    }
+    //int battery_pct = piam_battery_get_percent();
+    //if (battery_pct >= 0) {
+    //    lv_bar_set_value(ui_Bar4, battery_pct, LV_ANIM_OFF);
+    //}
 }
 
 // ===========================================================================================

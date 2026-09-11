@@ -87,6 +87,13 @@ static bool s_piam_screen_on = true;
 
 static void pwr_button_check_cb(lv_timer_t *timer)
 {
+    // PIAM Pro: mismo motivo que en el chequeo de alarmas -- nos
+    // salteamos este ciclo si hay una conexion WiFi en curso, para no
+    // tocar XPowersLib al mismo tiempo que WiFi se conecta.
+    if (wifi_is_connecting()) {
+        return;
+    }
+
     power.getIrqStatus();
 
     if (power.isPekeyShortPressIrq()) {
@@ -129,13 +136,12 @@ extern "C" void app_main(void)
     // periodico que las dispara (necesita el RTC ya inicializado).
     ui_alarms_init();
 
-    // ============================================================
-    // PIAM Pro: AJUSTE UNICO de fecha/hora -- BORRAR ESTE BLOQUE
-    // despues de flashear una vez, para que la bateria mantenga el
-    // paso del tiempo real (si lo dejas, resetea la hora a esto
-    // mismo en cada reinicio).
-    // ============================================================
-    esp_sdcard_port_init();
+    // PIAM Pro: SACADA -- sin tarjeta fisica puesta, esp_sdcard_port_init()
+    // siempre falla (ESP_ERR_TIMEOUT), y el backtrace de un crash real
+    // confirmo que el intento fallido de montaje corrompe memoria
+    // (assert en tlsf durante mount_prepare_mem/strdup). No se usa SD
+    // en ninguna funcion del proyecto -- se saca por completo.
+    // esp_sdcard_port_init();
     esp_camera_port_init(I2C_PORT_NUM);
     // esp_wifi_port_init("WSTEST", "waveshare0755");  // PIAM Pro: sacado,
     // choca con la inicializacion de WiFi propia de tts_audio_init() de abajo

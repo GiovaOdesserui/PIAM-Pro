@@ -68,12 +68,23 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                 int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
+        // PIAM Pro: auto-conectado SOLO al arrancar (momento con poca
+        // actividad concurrente -- mucho menos propenso al bug de
+        // condicion de carrera de ESP-IDF que si conectamos mas tarde,
+        // con todo lo demas ya corriendo).
+        // PIAM Pro: TEMPORALMENTE desactivado -- la placa crasheaba en
+        // loop en cada arranque porque intentaba reconectar sola a una
+        // red problemática. Reactivar despues de confirmar el fix de
+        // WPA2/heap.
+        // esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (!s_manual_connect_in_progress) {
-            ESP_LOGW(TAG, "WiFi desconectado, reintentando...");
-            esp_wifi_connect();
-        }
+        // PIAM Pro: reintento automatico DESACTIVADO -- el loop de
+        // desconexion/reconexion sin fin (cuando la red guardada no
+        // esta al alcance) terminaba reiniciando la placa.
+        // if (!s_manual_connect_in_progress) {
+        //     ESP_LOGW(TAG, "WiFi desconectado, reintentando...");
+        //     esp_wifi_connect();
+        // }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "WiFi conectado, IP: " IPSTR, IP2STR(&event->ip_info.ip));
@@ -127,20 +138,22 @@ static void wifi_init(void)
         strncpy((char *)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
         strncpy((char *)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
     }
-    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;  // PIAM Pro: mas permisivo, deja que la negociacion elija el modo real segun lo que anuncie el AP (WPA2, WPA3, etc)
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "Conectando a WiFi '%s'...", (const char *)wifi_config.sta.ssid);
+    // PIAM Pro: esperamos un rato a que el auto-conectado inicial
+    // termine, para saber si arrancamos con red o no.
+    ESP_LOGI(TAG, "Conectando a WiFi guardada...");
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT,
                                             pdFALSE, pdFALSE, pdMS_TO_TICKS(WIFI_CONNECT_TIMEOUT_MS));
 
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "WiFi conectado.");
+        ESP_LOGI(TAG, "WiFi conectado al arrancar.");
     } else {
-        ESP_LOGW(TAG, "WiFi no disponible todavia -- solo funcionara el cache por ahora.");
+        ESP_LOGW(TAG, "Sin WiFi al arrancar -- conectar manualmente desde Ajustes si hace falta.");
     }
 }
 
@@ -281,7 +294,7 @@ bool tts_speak(const char *text_utf8)
     esp_http_client_config_t config = {};
     config.url = url;
     config.event_handler = http_event_handler;
-    config.timeout_ms = 15000;
+    config.timeout_ms = 8000;  // PIAM Pro: bajado de 15s -- un fallo de red se siente rapido, no como una congelada larga
     config.crt_bundle_attach = esp_crt_bundle_attach; // certificados TLS del sistema
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -532,7 +545,7 @@ bool stt_stop_and_transcribe(void)
     esp_http_client_config_t config = {};
     config.url = "https://api.elevenlabs.io/v1/speech-to-text";
     config.event_handler = stt_http_event_handler;
-    config.timeout_ms = 45000;
+    config.timeout_ms = 20000;  // PIAM Pro: bajado de 45s -- sigue dando margen para audios largos, pero un fallo no congela tanto tiempo
     config.crt_bundle_attach = esp_crt_bundle_attach;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -599,6 +612,16 @@ const char *stt_get_last_transcript(void)
 
 int wifi_scan_networks(wifi_scan_result_t *out, int max_results)
 {
+    // PIAM Pro: si la red guardada de casa no esta al alcance (ej: en
+    // el lugar de una presentacion), el reconectado automatico queda
+    // reintentando sin parar en el fondo, y eso le gana la radio al
+    // escaneo -- devuelve vacio casi al instante. Frenamos ese
+    // reconectado y cortamos cualquier intento en curso antes de
+    // escanear.
+    s_manual_connect_in_progress = true;
+    esp_wifi_disconnect();
+    vTaskDelay(pdMS_TO_TICKS(200));
+
     wifi_scan_config_t scan_config = {};
     scan_config.show_hidden = false;
 
@@ -606,15 +629,22 @@ int wifi_scan_networks(wifi_scan_result_t *out, int max_results)
     esp_err_t err = esp_wifi_scan_start(&scan_config, true); // bloqueante
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error al escanear: %s", esp_err_to_name(err));
+        s_manual_connect_in_progress = false;
         return 0;
     }
 
     uint16_t ap_count = 0;
     esp_wifi_scan_get_ap_num(&ap_count);
-    if (ap_count == 0) return 0;
+    if (ap_count == 0) {
+        s_manual_connect_in_progress = false;
+        return 0;
+    }
 
     wifi_ap_record_t *ap_records = (wifi_ap_record_t *)malloc(sizeof(wifi_ap_record_t) * ap_count);
-    if (!ap_records) return 0;
+    if (!ap_records) {
+        s_manual_connect_in_progress = false;
+        return 0;
+    }
 
     esp_wifi_scan_get_ap_records(&ap_count, ap_records);
 
@@ -644,6 +674,9 @@ int wifi_scan_networks(wifi_scan_result_t *out, int max_results)
 
     free(ap_records);
     ESP_LOGI(TAG, "Encontradas %d redes", count);
+
+    s_manual_connect_in_progress = false;
+
     return count;
 }
 
@@ -661,7 +694,7 @@ bool wifi_connect_and_save(const char *ssid, const char *password)
     wifi_config_t wifi_config = {};
     strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
-    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;  // PIAM Pro: mas permisivo, deja que la negociacion elija el modo real segun lo que anuncie el AP (WPA2, WPA3, etc)
 
     esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     esp_wifi_connect();
@@ -690,6 +723,11 @@ bool wifi_connect_and_save(const char *ssid, const char *password)
 }
 
 // =====================================================================
+
+bool wifi_is_connecting(void)
+{
+    return s_manual_connect_in_progress;
+}
 
 void tts_audio_init(void)
 {

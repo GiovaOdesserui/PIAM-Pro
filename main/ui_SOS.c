@@ -202,6 +202,15 @@ static void show_alarm_visual(void)
 
 static void alarm_check_timer_cb(lv_timer_t *timer)
 {
+    // PIAM Pro: si justo ahora se esta estableciendo una conexion WiFi,
+    // nos salteamos este ciclo -- leer el RTC (SensorLib) al mismo
+    // tiempo que WiFi se conecta puede crashear la placa (condicion de
+    // carrera dentro del propio ESP-IDF). Esperamos al proximo ciclo,
+    // 20 segundos despues, cuando ya no haya conflicto.
+    if (wifi_is_connecting()) {
+        return;
+    }
+
     int hour, minute;
     piam_rtc_get_hour_minute(&hour, &minute);
 
