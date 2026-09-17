@@ -197,6 +197,9 @@ void lv_port_init(void)
 {
     lvgl_port_cfg_t port_cfg = ESP_LVGL_PORT_INIT_CONFIG();
     port_cfg.task_stack = 16384;  // PIAM Pro: subimos el stack      (default suele ser 4096)
+    port_cfg.task_affinity = 0;   // PIAM Pro: mismo nucleo que el WiFi (Core 0) -- prueba
+                                   // para descartar una condicion de carrera entre nucleos
+                                   // tocando el mismo sistema interno de pthread TLS
     lvgl_port_init(&port_cfg);
     ESP_LOGI(TAG, "Adding LCD screen");
     lvgl_port_display_cfg_t display_cfg = {

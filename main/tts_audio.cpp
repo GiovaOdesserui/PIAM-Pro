@@ -139,6 +139,7 @@ static void wifi_init(void)
         strncpy((char *)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
     }
     wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;  // PIAM Pro: mas permisivo, deja que la negociacion elija el modo real segun lo que anuncie el AP (WPA2, WPA3, etc)
+    wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;      // PIAM Pro: CRITICO -- el ejemplo oficial siempre setea esto, nosotros nunca lo haciamos (quedaba en 0/sin especificar)
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
@@ -695,6 +696,7 @@ bool wifi_connect_and_save(const char *ssid, const char *password)
     strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
     wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;  // PIAM Pro: mas permisivo, deja que la negociacion elija el modo real segun lo que anuncie el AP (WPA2, WPA3, etc)
+    wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;      // PIAM Pro: CRITICO -- el ejemplo oficial siempre setea esto, nosotros nunca lo haciamos (quedaba en 0/sin especificar)
 
     esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     esp_wifi_connect();

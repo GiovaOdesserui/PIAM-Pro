@@ -581,3 +581,14 @@ void pmu_isr_handler(void)
     // Clear PMU Interrupt Status Register
     power.clearIrqStatus();
 }
+
+extern "C" int piam_battery_get_percent(void)
+{
+    static bool logged_once = false;
+    if (!logged_once) {
+        printf("PIAM Pro DEBUG bateria: conectada=%d, voltaje=%dmV, porcentaje=%d\n",
+               power.isBatteryConnect(), power.getBattVoltage(), power.getBatteryPercent());
+        logged_once = true;
+    }
+    return power.getBatteryPercent();
+}

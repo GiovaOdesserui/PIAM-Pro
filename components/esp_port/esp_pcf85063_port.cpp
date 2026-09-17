@@ -1,4 +1,5 @@
 
+#include "esp_pcf85063_port.h"
 #include "SensorPCF85063.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -26,4 +27,17 @@ void esp_pcf85063_port_init(i2c_master_bus_handle_t bus_handle)
         rtc.setDateTime(datetime.year, datetime.month, datetime.day, datetime.hour, datetime.minute, datetime.second);
     }
     rtc.start();
+}
+extern "C" void piam_rtc_get_hour_minute(int *hour, int *minute)
+{
+    RTC_DateTime dt = rtc.getDateTime();
+    if (hour) *hour = dt.hour;
+    if (minute) *minute = dt.minute;
+}
+
+extern "C" void piam_rtc_get_date(int *day, int *month)
+{
+    RTC_DateTime dt = rtc.getDateTime();
+    if (day) *day = dt.day;
+    if (month) *month = dt.month;
 }

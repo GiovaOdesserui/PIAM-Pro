@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "esp_pcf85063_port.h"
 #include "esp_axp2101_port.h"
+#include "tts_audio.h"
 #include <stdio.h>
 
 lv_obj_t * ui_HOUR = NULL;
@@ -39,6 +40,10 @@ static lv_timer_t *s_hour_rtc_timer = NULL;
 
 static void hour_rtc_timer_cb(lv_timer_t *timer)
 {
+    if (wifi_is_connecting()) {
+        return;
+    }
+
     int hour, minute, day, month;
     piam_rtc_get_hour_minute(&hour, &minute);
     piam_rtc_get_date(&day, &month);
