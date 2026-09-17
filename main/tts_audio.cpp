@@ -21,6 +21,7 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 
+#include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -68,15 +69,10 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                 int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        // PIAM Pro: auto-conectado SOLO al arrancar (momento con poca
-        // actividad concurrente -- mucho menos propenso al bug de
-        // condicion de carrera de ESP-IDF que si conectamos mas tarde,
-        // con todo lo demas ya corriendo).
-        // PIAM Pro: TEMPORALMENTE desactivado -- la placa crasheaba en
-        // loop en cada arranque porque intentaba reconectar sola a una
-        // red problemática. Reactivar despues de confirmar el fix de
-        // WPA2/heap.
-        // esp_wifi_connect();
+        // PIAM Pro: auto-conectado SOLO al arrancar, UN SOLO intento
+        // (no reintenta en loop). Reactivado porque ahora lo necesita
+        // el flujo de "cambiar de red -> guardar y reiniciar limpio".
+        esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         // PIAM Pro: reintento automatico DESACTIVADO -- el loop de
         // desconexion/reconexion sin fin (cuando la red guardada no
@@ -689,6 +685,50 @@ bool wifi_connect_and_save(const char *ssid, const char *password)
 
     xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
 
+    // PIAM Pro: si la red pedida es DISTINTA a la que ya tenemos
+    // guardada, cambiar en caliente tiene riesgo residual (bug
+    // probabilistico de ESP-IDF). En vez de reconfigurar mientras
+    // todo esta corriendo, guardamos la credencial nueva y reiniciamos
+    // limpio -- el arranque fresco resulto mucho mas confiable en
+    // nuestras pruebas. Reconectar a la MISMA red sigue el camino
+    // normal de abajo, que anduvo solido.
+    {
+        char current_ssid[33] = {0};
+        nvs_handle_t nvs_check;
+        bool is_different_network = true;
+        if (nvs_open("piam_wifi", NVS_READONLY, &nvs_check) == ESP_OK) {
+            size_t len = sizeof(current_ssid);
+            if (nvs_get_str(nvs_check, "ssid", current_ssid, &len) == ESP_OK) {
+                is_different_network = (strcmp(current_ssid, ssid) != 0);
+            }
+            nvs_close(nvs_check);
+        }
+
+        if (is_different_network) {
+            ESP_LOGI(TAG, "Red distinta a la guardada -- guardando y reiniciando limpio...");
+            nvs_handle_t nvs_save;
+            if (nvs_open("piam_wifi", NVS_READWRITE, &nvs_save) == ESP_OK) {
+                nvs_set_str(nvs_save, "ssid", ssid);
+                nvs_set_str(nvs_save, "pass", password);
+                nvs_commit(nvs_save);
+                nvs_close(nvs_save);
+            }
+            vTaskDelay(pdMS_TO_TICKS(500)); // dejar que se vea el log/UI un instante
+            esp_restart(); // no vuelve de aca -- la placa arranca de cero
+        }
+    }
+
+    // PIAM Pro: si ya estabamos conectados a OTRA red, un simple
+    // disconnect() no alcanza a limpiar todo el estado interno --
+    // hacemos un stop/start completo del driver antes de configurar
+    // la red nueva, para arrancar de cero de verdad.
+    // PIAM Pro: probamos un stop/start completo aca (pensando que
+    // ayudaria a limpiar estado al cambiar de red), pero eso mismo
+    // dispara wifi_default_action_sta_start, que puede pegarle al
+    // MISMO bug de pthread de ESP-IDF en un punto distinto. El
+    // disconnect() simple ya andaba bien para reconectar a la MISMA
+    // red -- lo dejamos asi (el caso de red DISTINTA ya se maneja
+    // arriba, con reinicio limpio, y nunca llega hasta aca).
     esp_wifi_disconnect();
     vTaskDelay(pdMS_TO_TICKS(200)); // le damos tiempo real a desconectar antes de reconfigurar
 

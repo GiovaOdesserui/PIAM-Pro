@@ -137,6 +137,11 @@ void ui_event_Keyboard2_ready(lv_event_t * e)
 {
     const char *password = lv_textarea_get_text(ui_TextArea4);
 
+    // PIAM Pro: si es una red distinta a la guardada, wifi_connect_and_save()
+    // va a reiniciar la placa sola (no vuelve de esa llamada) -- mostramos
+    // este mensaje antes, por si alcanza a verse un instante en pantalla.
+    lv_label_set_text(ui_Label27, "Conectando...");
+
     bool ok = wifi_connect_and_save(s_selected_ssid, password);
 
     if (ok) {
